@@ -64,8 +64,8 @@ volatile uint32_t system_ticks = 0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_I2C1_Init(void);
-static void MX_SPI1_Init(void);
+void MX_I2C1_Init(void);
+void MX_SPI1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_IWDG_Init(void);
 static void MX_LPTIM1_Init(void);
@@ -136,17 +136,7 @@ int main(void)
   RCC->CSR |= RCC_CSR_RMVF;
   #endif
 
-  LL_RTC_DisableWriteProtection(RTC);
-  LL_RTC_WAKEUP_Disable(RTC);
-  WAIT_FLAG(LL_RTC_IsActiveFlag_WUTW(RTC), 10);
-  LL_RTC_WAKEUP_SetClock(RTC,LL_RTC_WAKEUPCLOCK_CKSPRE);
-  LL_RTC_WAKEUP_SetAutoReload(RTC, 19);
-  LL_RTC_EnableIT_WUT(RTC);
-  LL_RTC_WAKEUP_Enable(RTC);
-  LL_RTC_EnableWriteProtection(RTC);
-  
-  LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_20);
-  LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_20);
+  LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_29);
 
   BSP_PeriphModeActive();
   NRF24_Init();   DEBUG_RTT_WriteString(0, "NRF Init.\r\n");
@@ -187,24 +177,12 @@ int main(void)
     while (wakeup_counter < 30) {
       
       LL_IWDG_ReloadCounter(IWDG);
-      LL_SYSTICK_DisableIT();
-
-      LL_PWR_SetPowerMode(LL_PWR_MODE_STOP);
-      LL_PWR_SetRegulModeLP(LL_PWR_REGU_LPMODES_LOW_POWER);
-      LL_LPM_EnableDeepSleep();
-
-      __WFI();
-
-      LL_PWR_SetRegulModeLP(LL_PWR_REGU_LPMODES_MAIN);
-      LL_SYSTICK_EnableIT(); 
       
-      if (LL_RTC_IsActiveFlag_WUT(RTC)) {
-        LL_RTC_ClearFlag_WUT(RTC);
-      }
-      LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
+      BSP_LowPowerDelay(20000);
 
       wakeup_counter++;
     }
+  }
   /* USER CODE END 3 */
 }
 
@@ -269,7 +247,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_I2C1_Init(void)
+void MX_I2C1_Init(void)
 {
 
   /* USER CODE BEGIN I2C1_Init 0 */
@@ -456,7 +434,7 @@ static void MX_RTC_Init(void)
   * @param None
   * @retval None
   */
-static void MX_SPI1_Init(void)
+void MX_SPI1_Init(void)
 {
 
   /* USER CODE BEGIN SPI1_Init 0 */

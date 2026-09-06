@@ -147,7 +147,7 @@ void SysTick_Handler(void)
 void RTC_IRQHandler(void)
 {
   /* USER CODE BEGIN RTC_IRQn 0 */
-  if (LL_RTC_IsActiveFlag_WUT(RTC) != 0){
+  if (LL_RTC_IsActiveFlag_WUT(RTC) != 0) {
     LL_RTC_ClearFlag_WUT(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
   }
@@ -163,7 +163,9 @@ void RTC_IRQHandler(void)
 void LPTIM1_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM1_IRQn 0 */
-
+  if (LL_LPTIM_IsActiveFlag_ARRM(LPTIM1)) {
+    LL_LPTIM_ClearFlag_ARRM(LPTIM1);
+  }
   /* USER CODE END LPTIM1_IRQn 0 */
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 

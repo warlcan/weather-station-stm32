@@ -21,8 +21,6 @@ uint8_t BSP_GetErrors(void) {return system_errors;}
 void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (delay_ms == 0) return;
 
-    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_29);
-
     uint32_t ticks = (delay_ms * 1156) / 1000;
     if (ticks == 0) ticks = 1;
     if (ticks > 65535) ticks = 65535;
@@ -36,7 +34,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     LL_LPTIM_ClearFlag_ARRM(LPTIMx);
     LL_LPTIM_EnableIT_ARRM(LPTIMx);
 
-    SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+    LL_SYSTICK_DisableIT();
     
     LL_LPTIM_StartCounter(LPTIMx, LL_LPTIM_OPERATING_MODE_ONESHOT);
     
@@ -55,7 +53,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     LL_LPTIM_Disable(LPTIMx);
     
     system_ticks += delay_ms;
-    SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+    LL_SYSTICK_EnableIT();
 }
 
 
