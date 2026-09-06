@@ -64,10 +64,11 @@ volatile uint32_t system_ticks = 0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void MX_I2C1_Init(void);
-void MX_SPI1_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_IWDG_Init(void);
+static void MX_LPTIM1_Init(void);
 /* USER CODE BEGIN PFP */
 #ifdef debug
 void DEBUG_RTT_WriteInt(uint8_t buffer_index, int num);
@@ -121,6 +122,7 @@ int main(void)
   MX_SPI1_Init();
   MX_RTC_Init();
   MX_IWDG_Init();
+  MX_LPTIM1_Init();
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
 
@@ -205,7 +207,6 @@ int main(void)
     }
   /* USER CODE END 3 */
 }
-}
 
 /**
   * @brief System Clock Configuration
@@ -260,6 +261,7 @@ void SystemClock_Config(void)
 
   LL_SetSystemCoreClock(2097000);
   LL_RCC_SetI2CClockSource(LL_RCC_I2C1_CLKSOURCE_SYSCLK);
+  LL_RCC_SetLPTIMClockSource(LL_RCC_LPTIM1_CLKSOURCE_LSI);
 }
 
 /**
@@ -267,7 +269,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-void MX_I2C1_Init(void)
+static void MX_I2C1_Init(void)
 {
 
   /* USER CODE BEGIN I2C1_Init 0 */
@@ -358,6 +360,40 @@ static void MX_IWDG_Init(void)
 }
 
 /**
+  * @brief LPTIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_LPTIM1_Init(void)
+{
+
+  /* USER CODE BEGIN LPTIM1_Init 0 */
+
+  /* USER CODE END LPTIM1_Init 0 */
+
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_LPTIM1);
+
+  /* LPTIM1 interrupt Init */
+  NVIC_SetPriority(LPTIM1_IRQn, 0);
+  NVIC_EnableIRQ(LPTIM1_IRQn);
+
+  /* USER CODE BEGIN LPTIM1_Init 1 */
+
+  /* USER CODE END LPTIM1_Init 1 */
+  LL_LPTIM_SetClockSource(LPTIM1, LL_LPTIM_CLK_SOURCE_INTERNAL);
+  LL_LPTIM_SetPrescaler(LPTIM1, LL_LPTIM_PRESCALER_DIV32);
+  LL_LPTIM_SetPolarity(LPTIM1, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
+  LL_LPTIM_SetUpdateMode(LPTIM1, LL_LPTIM_UPDATE_MODE_ENDOFPERIOD);
+  LL_LPTIM_SetCounterMode(LPTIM1, LL_LPTIM_COUNTER_MODE_INTERNAL);
+  LL_LPTIM_TrigSw(LPTIM1);
+  /* USER CODE BEGIN LPTIM1_Init 2 */
+
+  /* USER CODE END LPTIM1_Init 2 */
+
+}
+
+/**
   * @brief RTC Initialization Function
   * @param None
   * @retval None
@@ -420,7 +456,7 @@ static void MX_RTC_Init(void)
   * @param None
   * @retval None
   */
-void MX_SPI1_Init(void)
+static void MX_SPI1_Init(void)
 {
 
   /* USER CODE BEGIN SPI1_Init 0 */

@@ -29,6 +29,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l0xx_ll_i2c.h"
 #include "stm32l0xx_ll_iwdg.h"
+#include "stm32l0xx_ll_lptim.h"
 #include "stm32l0xx_ll_crs.h"
 #include "stm32l0xx_ll_rcc.h"
 #include "stm32l0xx_ll_bus.h"
