@@ -111,7 +111,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+  LL_SYSTICK_EnableIT();
   LL_mDelay(2000); //SWD escape window to prevent bricking
   /* USER CODE END SysInit */
 
@@ -123,6 +123,7 @@ int main(void)
   MX_LPTIM1_Init();
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
+  LL_PWR_EnableFastWakeUp();
 
   #ifdef debug
   DEBUG_RTT_Init();
@@ -134,6 +135,8 @@ int main(void)
   RCC->CSR |= RCC_CSR_RMVF;
   #endif
 
+  LL_LPTIM_Enable(LPTIM1);
+  LL_LPTIM_EnableIT_ARRM(LPTIM1);
   LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_29);
 
   BSP_PeriphModeActive();

@@ -25,21 +25,16 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (ticks == 0) ticks = 1;
     if (ticks > 65535) ticks = 65535;
 
-    LL_LPTIM_Enable(LPTIMx);
     LL_LPTIM_SetAutoReload(LPTIMx, ticks);
-    
     WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIMx), 5); 
     LL_LPTIM_ClearFlag_ARROK(LPTIMx);
-
     LL_LPTIM_ClearFlag_ARRM(LPTIMx);
-    LL_LPTIM_EnableIT_ARRM(LPTIMx);
 
     LL_SYSTICK_DisableIT();
-    
     LL_LPTIM_StartCounter(LPTIMx, LL_LPTIM_OPERATING_MODE_ONESHOT);
-    
-    LL_PWR_SetRegulModeLP(LL_PWR_REGU_LPMODES_LOW_POWER);
-    LL_LPM_EnableDeepSleep(); 
+
+    LL_PWR_SetPowerMode(LL_PWR_MODE_STOP);
+    LL_LPM_EnableDeepSleep();
 
     __disable_irq(); 
     if (!LL_LPTIM_IsActiveFlag_ARRM(LPTIMx)) {
@@ -47,11 +42,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     }
     __enable_irq();
 
-    LL_LPM_EnableSleep(); 
-
-    LL_LPTIM_DisableIT_ARRM(LPTIMx);
-    LL_LPTIM_Disable(LPTIMx);
-    
+    LL_LPM_EnableSleep();  
     system_ticks += delay_ms;
     LL_SYSTICK_EnableIT();
 }
