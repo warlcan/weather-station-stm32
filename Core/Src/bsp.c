@@ -1,7 +1,10 @@
 #include "bsp.h"
 
+#include "stm32l0xx_ll_exti.h"
+
 #define SPIx SPI1
 #define I2Cx I2C1
+#define LPTIMx LPTIM1
 
 extern volatile uint32_t system_ticks;
 
@@ -15,12 +18,46 @@ uint8_t BSP_GetErrors(void) {return system_errors;}
 
 // === SYSTEM ===
 
-void BSP_LowPowerDelay(uint32_t delay) {
-    uint32_t start = system_ticks;
-    while ((system_ticks - start) < delay) {
-        __WFI(); 
+void BSP_LowPowerDelay(uint32_t delay_ms) {
+    if (delay_ms == 0) return;
+
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_29);
+
+    uint32_t ticks = (delay_ms * 1156) / 1000;
+    if (ticks == 0) ticks = 1;
+    if (ticks > 65535) ticks = 65535;
+
+    LL_LPTIM_Enable(LPTIMx);
+    LL_LPTIM_SetAutoReload(LPTIMx, ticks);
+    
+    WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIMx), 5); 
+    LL_LPTIM_ClearFlag_ARROK(LPTIMx);
+
+    LL_LPTIM_ClearFlag_ARRM(LPTIMx);
+    LL_LPTIM_EnableIT_ARRM(LPTIMx);
+
+    SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+    
+    LL_LPTIM_StartCounter(LPTIMx, LL_LPTIM_OPERATING_MODE_ONESHOT);
+    
+    LL_PWR_SetRegulModeLP(LL_PWR_REGU_LPMODES_LOW_POWER);
+    LL_LPM_EnableDeepSleep(); 
+
+    __disable_irq(); 
+    if (!LL_LPTIM_IsActiveFlag_ARRM(LPTIMx)) {
+        __WFI();
     }
+    __enable_irq();
+
+    LL_LPM_EnableSleep(); 
+
+    LL_LPTIM_DisableIT_ARRM(LPTIMx);
+    LL_LPTIM_Disable(LPTIMx);
+    
+    system_ticks += delay_ms;
+    SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
 }
+
 
 uint32_t BSP_GetUID(void) {
     uint32_t *uid = (uint32_t *)UID_BASE;
