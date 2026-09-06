@@ -2,7 +2,9 @@
 
 #include "stm32l0xx_ll_exti.h"
 
-extern volatile uint32_t system_ticks;
+#define LSI_FREQ_HZ          37000U
+#define LPTIM_PRESCALER      32U
+#define LPTIM_TICKS_PER_SEC  (LSI_FREQ_HZ / LPTIM_PRESCALER)
 
 // === ERROR HANDLERS ===
 
@@ -17,7 +19,7 @@ uint8_t BSP_GetErrors(void) {return system_errors;}
 void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (delay_ms == 0) return;
 
-    uint32_t ticks = (delay_ms * 1156) / 1000;
+    uint32_t ticks = (delay_ms * LPTIM_TICKS_PER_SEC) / 1000;
     if (ticks == 0) ticks = 1;
     if (ticks > 65535) ticks = 65535;
 

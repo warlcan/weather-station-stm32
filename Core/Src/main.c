@@ -155,10 +155,12 @@ int main(void)
     BSP_PeriphModeActive();
 
     if(!AHT20_GetData(I2C1, &aht20_data)) {
+      BSP_ErrorSet(ERR_SENSORS_ERROR)
       DEBUG_RTT_WriteString(0, "AHT20 Error\n");
     }
 
     if(!BMP280_GetData(I2C1, &bmp280_data)) {
+      BSP_ErrorSet(ERR_SENSORS_ERROR)
       DEBUG_RTT_WriteString(0, "BMP280 Error\n");
     }
 

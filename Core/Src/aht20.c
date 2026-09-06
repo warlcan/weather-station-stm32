@@ -2,8 +2,8 @@
 
 #define AHT20_I2C_ADDRESS        0x38 << 1
 
-#define AHT20_CALIBRATE_DELAY_MS 40
 #define AHT20_MEASURE_DELAY_MS   90
+#define AHT20_CALIBRATE_DELAY_MS 40
 
 #define AHT20_STATUS_BUSY_BIT    0x80
 #define AHT20_STATUS_CAL_BIT     0x08
@@ -26,7 +26,7 @@ bool AHT20_GetData(I2C_TypeDef *I2Cx, AHT20_Data_t *out_data) {
     //Check errors
     if ((receive_data_buffer[0] & AHT20_STATUS_BUSY_BIT) != 0) return false;
     if ((receive_data_buffer[0] & AHT20_STATUS_CAL_BIT)  == 0) {
-        uint8_t calibrate_cmd_bytes[] = {0xBE, 0x08, 0x00}; //Send calibrate command
+        uint8_t calibrate_cmd_bytes[] = {0xBE, 0x08, 0x00}; //Calibrate command
         if(!I2C_TransmitData(I2Cx, AHT20_I2C_ADDRESS, calibrate_cmd_bytes, 3)) return false;
         BSP_LowPowerDelay(AHT20_CALIBRATE_DELAY_MS);
         return false;
