@@ -11,6 +11,6 @@ typedef struct {
     float temperature;
 } AHT20_Data_t;
 
-bool AHT20_GetData(AHT20_Data_t *out_data);
+bool AHT20_GetData(I2C_TypeDef *I2Cx, AHT20_Data_t *out_data);
 
 #endif

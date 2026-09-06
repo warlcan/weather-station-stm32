@@ -11,7 +11,7 @@ typedef struct {
     float temperature;
 } BMP280_Data_t;
 
-bool BMP280_GetData(BMP280_Data_t *out_data);
-bool BMP280_GetCoef(void);
+bool BMP280_GetCoef(I2C_TypeDef *I2Cx);
+bool BMP280_GetData(I2C_TypeDef *I2Cx, BMP280_Data_t *out_data);
 
 #endif

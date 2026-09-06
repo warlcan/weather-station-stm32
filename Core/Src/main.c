@@ -140,8 +140,8 @@ int main(void)
   LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_29);
 
   BSP_PeriphModeActive();
-  NRF24_Init();   DEBUG_RTT_WriteString(0, "NRF Init.\r\n");
-  BMP280_GetCoef();  DEBUG_RTT_WriteString(0, "BMP Init.\r\n");
+  NRF24_Init(SPI1);   DEBUG_RTT_WriteString(0, "NRF Init.\r\n");
+  BMP280_GetCoef(I2C1);  DEBUG_RTT_WriteString(0, "BMP Init.\r\n");
   BSP_PeriphModeSleep();
   /* USER CODE END 2 */
 
@@ -154,11 +154,11 @@ int main(void)
     /* USER CODE BEGIN 3 */
     BSP_PeriphModeActive();
 
-    if(!AHT20_GetData(&aht20_data)) {
+    if(!AHT20_GetData(I2C1, &aht20_data)) {
       DEBUG_RTT_WriteString(0, "AHT20 Error\n");
     }
 
-    if(!BMP280_GetData(&bmp280_data)) {
+    if(!BMP280_GetData(I2C1, &bmp280_data)) {
       DEBUG_RTT_WriteString(0, "BMP280 Error\n");
     }
 
@@ -168,7 +168,7 @@ int main(void)
     nrf24_data.pressure    = bmp280_data.pressure;
     nrf24_data.errors      = BSP_GetErrors();
 
-    NRF24_TransmitData(&nrf24_data, sizeof(nrf24_data));
+    NRF24_TransmitData(SPI1, &nrf24_data, sizeof(nrf24_data));
     BSP_PeriphModeSleep();
     #ifdef debug
     while (SEGGER_RTT_HasDataUp(0) != 0);

@@ -1,6 +1,5 @@
 #include "bmp280.h"
 
-#define BMP280_I2C              I2C1
 #define BMP280_I2C_ADDRESS      (0x77 << 1)
 #define BMP280_MEASURE_DELAY_MS 20
 
@@ -43,9 +42,9 @@ uint32_t bmp280_compensate_P_int64(int32_t adc_P) {
     return (uint32_t)p;
 }
 
-bool BMP280_GetCoef(void) {
+bool BMP280_GetCoef(I2C_TypeDef *I2Cx) {
     uint8_t calib[24];
-    if (!I2C_ReceiveRegsData(BMP280_I2C, BMP280_I2C_ADDRESS, 0x88, calib, sizeof(calib))) return false;
+    if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 0x88, calib, sizeof(calib))) return false;
 
     cb.dig_T1 = (uint16_t)(calib[0]  | (calib[1] << 8));
     cb.dig_T2 = (int16_t) (calib[2]  | (calib[3] << 8));
@@ -64,18 +63,18 @@ bool BMP280_GetCoef(void) {
     return true;
 }
 
-bool BMP280_GetData(BMP280_Data_t *out_data) {
+bool BMP280_GetData(I2C_TypeDef *I2Cx, BMP280_Data_t *out_data) {
     if (!BMP280_is_init) return false; //foolproofing
 
     //Transmit configuration
     uint8_t bmp280_config_data[2] = {0xF4, 0x4D}; // 0x010_011_01
-    if (!I2C_TransmitData(BMP280_I2C, BMP280_I2C_ADDRESS, bmp280_config_data, sizeof(bmp280_config_data))){ return false; }
+    if (!I2C_TransmitData(I2Cx, BMP280_I2C_ADDRESS, bmp280_config_data, sizeof(bmp280_config_data))){ return false; }
     
     BSP_LowPowerDelay(BMP280_MEASURE_DELAY_MS);
 
     //Receive measurement data
     uint8_t measure_buffer[6];
-    if (!I2C_ReceiveRegsData(BMP280_I2C, BMP280_I2C_ADDRESS, 0xF7, measure_buffer, sizeof(measure_buffer))){ return false; }
+    if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 0xF7, measure_buffer, sizeof(measure_buffer))){ return false; }
 
     //Parsing
     int32_t adc_P = (int32_t)((((uint32_t)(measure_buffer[0])) << 12) | 

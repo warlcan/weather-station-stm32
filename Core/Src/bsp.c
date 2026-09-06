@@ -2,10 +2,6 @@
 
 #include "stm32l0xx_ll_exti.h"
 
-#define SPIx SPI1
-#define I2Cx I2C1
-#define LPTIMx LPTIM1
-
 extern volatile uint32_t system_ticks;
 
 // === ERROR HANDLERS ===
@@ -25,19 +21,19 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (ticks == 0) ticks = 1;
     if (ticks > 65535) ticks = 65535;
 
-    LL_LPTIM_SetAutoReload(LPTIMx, ticks);
-    WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIMx), 5); 
-    LL_LPTIM_ClearFlag_ARROK(LPTIMx);
-    LL_LPTIM_ClearFlag_ARRM(LPTIMx);
+    LL_LPTIM_SetAutoReload(LPTIM1, ticks);
+    WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIM1), 5); 
+    LL_LPTIM_ClearFlag_ARROK(LPTIM1);
+    LL_LPTIM_ClearFlag_ARRM(LPTIM1);
 
     LL_SYSTICK_DisableIT();
-    LL_LPTIM_StartCounter(LPTIMx, LL_LPTIM_OPERATING_MODE_ONESHOT);
+    LL_LPTIM_StartCounter(LPTIM1, LL_LPTIM_OPERATING_MODE_ONESHOT);
 
     LL_PWR_SetPowerMode(LL_PWR_MODE_STOP);
     LL_LPM_EnableDeepSleep();
 
     __disable_irq(); 
-    if (!LL_LPTIM_IsActiveFlag_ARRM(LPTIMx)) {
+    if (!LL_LPTIM_IsActiveFlag_ARRM(LPTIM1)) {
         __WFI();
     }
     __enable_irq();
@@ -65,11 +61,11 @@ static void BSP_SensorStart(void) {
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_10, LL_GPIO_MODE_ALTERNATE);
 
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
-    LL_I2C_Enable(I2Cx);
+    LL_I2C_Enable(I2C1);
 }
 
 static void BSP_SensorStop(void) {
-    LL_I2C_Disable(I2Cx);
+    LL_I2C_Disable(I2C1);
     LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_I2C1);
     
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_9, LL_GPIO_MODE_ANALOG);
@@ -87,11 +83,11 @@ static void BSP_SpiStart(void) {
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_7, LL_GPIO_MODE_ALTERNATE);
 
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
-    LL_SPI_Enable(SPIx); 
+    LL_SPI_Enable(SPI1); 
 }
 
 static void BSP_SpiStop(void){
-    LL_SPI_Disable(SPIx);
+    LL_SPI_Disable(SPI1);
     LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_SPI1);
 
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_5, LL_GPIO_MODE_OUTPUT);
