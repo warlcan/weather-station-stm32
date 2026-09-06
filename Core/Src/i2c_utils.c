@@ -40,7 +40,7 @@ bool I2C_ReceiveData(I2C_TypeDef *I2Cx, uint8_t slave_addr,
                           LL_I2C_ADDRSLAVE_7BIT, data_size, 
                           LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_READ);
     for (uint8_t i = 0; i < data_size; i++) {
-        if(WAIT_FLAG(LL_I2C_IsActiveFlag_RXNE(I2Cx), I2C_TIMEOUT_MS)) {
+        if(!WAIT_FLAG(LL_I2C_IsActiveFlag_RXNE(I2Cx), I2C_TIMEOUT_MS)) {
             BSP_ErrorSet(ERR_I2C_TXRX);
             return false;
         }

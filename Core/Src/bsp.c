@@ -35,7 +35,11 @@ static void BSP_SensorStart(void) {
 
     BSP_LowPowerDelay(50);
 
-    MX_I2C1_Init();
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_9, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_10, LL_GPIO_MODE_ALTERNATE);
+
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
+    LL_I2C_Enable(I2Cx);
 }
 
 static void BSP_SensorStop(void) {
@@ -52,8 +56,12 @@ static void BSP_SensorStop(void) {
 // === SPI ===
 
 static void BSP_SpiStart(void) {
-    MX_SPI1_Init();
-    LL_SPI_Enable(SPIx);  
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_5, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_6, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_7, LL_GPIO_MODE_ALTERNATE);
+
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
+    LL_SPI_Enable(SPIx); 
 }
 
 static void BSP_SpiStop(void){
