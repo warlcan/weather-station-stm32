@@ -66,7 +66,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 void MX_I2C1_Init(void);
 void MX_SPI1_Init(void);
-static void MX_RTC_Init(void);
 static void MX_IWDG_Init(void);
 static void MX_LPTIM1_Init(void);
 /* USER CODE BEGIN PFP */
@@ -120,7 +119,6 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_SPI1_Init();
-  MX_RTC_Init();
   MX_IWDG_Init();
   MX_LPTIM1_Init();
   /* USER CODE BEGIN 2 */
@@ -216,14 +214,6 @@ void SystemClock_Config(void)
   }
   LL_RCC_MSI_SetRange(LL_RCC_MSIRANGE_5);
   LL_RCC_MSI_SetCalibTrimming(0);
-  LL_PWR_EnableBkUpAccess();
-  if(LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSI)
-  {
-    LL_RCC_ForceBackupDomainReset();
-    LL_RCC_ReleaseBackupDomainReset();
-    LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
-  }
-  LL_RCC_EnableRTC();
   LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
   LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
   LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
@@ -368,64 +358,6 @@ static void MX_LPTIM1_Init(void)
   /* USER CODE BEGIN LPTIM1_Init 2 */
 
   /* USER CODE END LPTIM1_Init 2 */
-
-}
-
-/**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_RTC_Init(void)
-{
-
-  /* USER CODE BEGIN RTC_Init 0 */
-
-  /* USER CODE END RTC_Init 0 */
-
-  LL_RTC_InitTypeDef RTC_InitStruct = {0};
-  LL_RTC_TimeTypeDef RTC_TimeStruct = {0};
-  LL_RTC_DateTypeDef RTC_DateStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_RCC_EnableRTC();
-
-  /* RTC interrupt Init */
-  NVIC_SetPriority(RTC_IRQn, 0);
-  NVIC_EnableIRQ(RTC_IRQn);
-
-  /* USER CODE BEGIN RTC_Init 1 */
-
-  /* USER CODE END RTC_Init 1 */
-
-  /** Initialize RTC and set the Time and Date
-  */
-  RTC_InitStruct.HourFormat = LL_RTC_HOURFORMAT_24HOUR;
-  RTC_InitStruct.AsynchPrescaler = 124;
-  RTC_InitStruct.SynchPrescaler = 295;
-  LL_RTC_Init(RTC, &RTC_InitStruct);
-
-  /** Initialize RTC and set the Time and Date
-  */
-  RTC_TimeStruct.Hours = 0;
-  RTC_TimeStruct.Minutes = 0;
-  RTC_TimeStruct.Seconds = 0;
-  LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
-  RTC_DateStruct.WeekDay = LL_RTC_WEEKDAY_MONDAY;
-  RTC_DateStruct.Month = LL_RTC_MONTH_JANUARY;
-  RTC_DateStruct.Day = 0x1;
-  RTC_DateStruct.Year = 0;
-  LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);
-
-  /** Initialize RTC and set the Time and Date
-  */
-
-  /** Enable the WakeUp
-  */
-  LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_CKSPRE);
-  /* USER CODE BEGIN RTC_Init 2 */
-
-  /* USER CODE END RTC_Init 2 */
 
 }
 

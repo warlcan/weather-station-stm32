@@ -142,22 +142,6 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles RTC global interrupt through EXTI lines 17, 19 and 20 and LSE CSS interrupt through EXTI line 19.
-  */
-void RTC_IRQHandler(void)
-{
-  /* USER CODE BEGIN RTC_IRQn 0 */
-  if (LL_RTC_IsActiveFlag_WUT(RTC) != 0) {
-    LL_RTC_ClearFlag_WUT(RTC);
-    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
-  }
-  /* USER CODE END RTC_IRQn 0 */
-  /* USER CODE BEGIN RTC_IRQn 1 */
-
-  /* USER CODE END RTC_IRQn 1 */
-}
-
-/**
   * @brief This function handles LPTIM1 global interrupt / LPTIM1 wake-up interrupt through EXTI line 29.
   */
 void LPTIM1_IRQHandler(void)
