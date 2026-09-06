@@ -1,7 +1,13 @@
 #include "bmp280.h"
 
 #define BMP280_I2C_ADDRESS      (0x77 << 1)
+
 #define BMP280_MEASURE_DELAY_MS 20
+
+#define BMP280_OSRS_T_2X    (0x02 << 5) // 010_00000
+#define BMP280_OSRS_P_4X    (0x03 << 2) // 000_11000
+#define BMP280_MODE_FORCED  (0x01 << 0) // 000_00001
+#define BMP280_CONFIG (BMP280_OSRS_T_2X | BMP280_OSRS_P_4X | BMP280_MODE_FORCED)
 
 typedef struct {
     uint16_t dig_T1; int16_t  dig_T2; int16_t  dig_T3;
@@ -67,7 +73,7 @@ bool BMP280_GetData(I2C_TypeDef *I2Cx, BMP280_Data_t *out_data) {
     if (!BMP280_is_init) return false; //foolproofing
 
     //Transmit configuration
-    uint8_t bmp280_config_data[2] = {0xF4, 0x4D}; // 0x010_011_01
+    uint8_t bmp280_config_data[2] = {0xF4, BMP280_CONFIG};
     if (!I2C_TransmitData(I2Cx, BMP280_I2C_ADDRESS, bmp280_config_data, sizeof(bmp280_config_data))){ return false; }
     
     BSP_LowPowerDelay(BMP280_MEASURE_DELAY_MS);
