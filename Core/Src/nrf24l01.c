@@ -131,7 +131,9 @@ static void NRF24_WriteByteBuf(SPI_TypeDef *SPIx, uint8_t cmd, uint8_t *buf, uin
     for(uint8_t i = 0; i < buf_size; i++) {
         NRF24_SPI_WriteByte(SPIx, buf[i]);
     }
-    WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), SPI_TIMEOUT_MS);
+    if(WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), SPI_TIMEOUT_MS)) {
+        BSP_ErrorSet(ERR_NRF_BSY);
+    }
     LL_GPIO_SetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
 }
 
@@ -149,7 +151,7 @@ void NRF24_Init(SPI_TypeDef *SPIx){
     NRF24_SetReg(SPIx, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_ALL);
 
     uint8_t check_aw = NRF24_ReadReg(SPIx, NRF24_REG_SETUP_AW);
-    if (check_aw != NRF24_AW_5BYTES) BSP_ErrorSet(ERR_NRF_NOT_FOUND);
+    if (check_aw != NRF24_AW_5BYTES) BSP_ErrorSet(ERR_NRF_ERROR);
 
 }
 
@@ -164,6 +166,7 @@ bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf
 
     if(!WAIT_FLAG(NRF24_ReadReg(SPIx, NRF24_REG_STATUS) & NRF24_STATUS_TX_DS_MASK, SPI_TIMEOUT_MS)) {
             NRF24_SetReg(SPIx, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_ALL);
+            BSP_ErrorSet(ERR_NRF_ERROR);
             return false;
     }
 
