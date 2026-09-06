@@ -1,7 +1,7 @@
 #include "bsp.h"
 
-#define NRF24_SPI                  SPI1
-#define I2C_FLAG_BUSY_TIMEOUT      20
+#define SPIx SPI1
+#define I2Cx I2C1
 
 extern volatile uint32_t system_ticks;
 
@@ -27,45 +27,37 @@ uint32_t BSP_GetUID(void) {
     return uid[0] ^ uid[1] ^ uid[2];
 }
 
+// === SENSORS ===
 
-// === SENSORS POWER ===
+static void BSP_SensorStart(void) {
+    LL_GPIO_SetPinMode(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetOutputPin(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin);
 
-static inline void BSP_SensorsPowerOn() {
-  LL_GPIO_SetPinMode(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin, LL_GPIO_MODE_OUTPUT);
-  LL_GPIO_SetOutputPin(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin);
-}
-static inline void BSP_SensorsPowerOff() {
-  LL_GPIO_SetPinMode(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin, LL_GPIO_MODE_ANALOG);
-  LL_GPIO_ResetOutputPin(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin);
-}
-
-// === I2C ===
-
-static void BSP_I2cStart(void) {
-    //Reset i2c
-    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_I2C1);
-    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_I2C1);
+    BSP_LowPowerDelay(50);
 
     MX_I2C1_Init();
 }
 
-static void BSP_I2cStop(void) {    
-    LL_I2C_Disable(I2C1);
+static void BSP_SensorStop(void) {
+    LL_I2C_Disable(I2Cx);
     LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_I2C1);
     
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_9, LL_GPIO_MODE_ANALOG);
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_10, LL_GPIO_MODE_ANALOG);
+
+    LL_GPIO_SetPinMode(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin, LL_GPIO_MODE_ANALOG);
+    LL_GPIO_ResetOutputPin(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin);
 }
 
 // === SPI ===
 
 static void BSP_SpiStart(void) {
     MX_SPI1_Init();
-    LL_SPI_Enable(NRF24_SPI);  
+    LL_SPI_Enable(SPIx);  
 }
 
 static void BSP_SpiStop(void){
-    LL_SPI_Disable(NRF24_SPI);
+    LL_SPI_Disable(SPIx);
     LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_SPI1);
 
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_5, LL_GPIO_MODE_OUTPUT);
@@ -84,14 +76,11 @@ static void BSP_SpiStop(void){
 // === PERIPHERAL MODES ===
 
 void BSP_PeriphModeActive() {
-    BSP_SensorsPowerOn();
-    BSP_LowPowerDelay(50);
-    BSP_I2cStart();
+    BSP_SensorStart();
     BSP_SpiStart();
 }
 
 void BSP_PeriphModeSleep(){
-    BSP_I2cStop();
+    BSP_SensorStop();
     BSP_SpiStop();
-    BSP_SensorsPowerOff();
 }
