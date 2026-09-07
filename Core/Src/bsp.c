@@ -51,6 +51,18 @@ uint32_t BSP_GetUID(void) {
     return uid[0] ^ uid[1] ^ uid[2];
 }
 
+uint32_t BSP_GetRandNum(uint32_t *seed){
+    if (*seed == 0) *seed = 0xA2E5; 
+    uint32_t x = *seed; 
+
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+
+    *seed = x;
+    return x;
+}
+
 // === SENSORS ===
 
 static void BSP_SensorStart(void) {

@@ -39,6 +39,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 // #define debug
+#define SLEEP_ONE_PHASE_TIME_MS 20000
+#define SLEEP_PHASES_NUMBER     30
+#define SLEEP_JITTER_LIMIT      10000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -92,6 +95,7 @@ int main(void)
   BMP280_Data_t bmp280_data;
   NRF24_Data_t nrf24_data;
   uint32_t wakeup_counter = 0;
+  uint32_t rand_num = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -124,6 +128,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
   LL_PWR_EnableFastWakeUp();
+
+  rand_num = BSP_GetUID();
 
   #ifdef debug
   DEBUG_RTT_Init();
@@ -177,14 +183,15 @@ int main(void)
     #endif
 
     wakeup_counter = 0;
-    while (wakeup_counter < 30) {
-      
+    while (wakeup_counter < SLEEP_PHASES_NUMBER) {
       LL_IWDG_ReloadCounter(IWDG);
       
-      BSP_LowPowerDelay(20000);
+      BSP_LowPowerDelay(SLEEP_ONE_PHASE_TIME_MS);
 
       wakeup_counter++;
     }
+    uint32_t jitter_sleep_time = (uint32_t)(((uint64_t)BSP_GetRandNum(&rand_num) * SLEEP_JITTER_LIMIT) >> 32);
+    BSP_LowPowerDelay(jitter_sleep_time);
   }
   /* USER CODE END 3 */
 }
