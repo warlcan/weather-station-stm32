@@ -21,7 +21,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
 
     uint32_t ticks = (delay_ms * LPTIM_TICKS_PER_SEC) / 1000;
     if (ticks == 0) ticks = 1;
-    if (ticks > 65535) ticks = 65535;
+    if (ticks > 25000) ticks = 25000; // if ticks > 21s(min) the iwdg will trigger
 
     LL_LPTIM_SetAutoReload(LPTIM1, ticks);
     WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIM1), 5); 

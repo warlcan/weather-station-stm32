@@ -190,6 +190,7 @@ int main(void)
 
       wakeup_counter++;
     }
+    LL_IWDG_ReloadCounter(IWDG);
     uint32_t jitter_sleep_time = (uint32_t)(((uint64_t)BSP_GetRandNum(&rand_num) * SLEEP_JITTER_LIMIT) >> 32);
     BSP_LowPowerDelay(jitter_sleep_time);
   }
