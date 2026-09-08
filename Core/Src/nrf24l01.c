@@ -1,8 +1,8 @@
 #include "nrf24l01.h"
 
-#define NRF24_WAKEUP_DELAY_MS      2
-#define NRF24_CE_DELAY_US          20
-#define SPI_TIMEOUT_MS             5
+#define NRF24_WAKEUP_DELAY_MS   2
+#define NRF24_CE_DELAY_US       20
+#define SPI_TIMEOUT_MS          5
 
 extern uint32_t SystemCoreClock;
 
@@ -17,44 +17,102 @@ typedef enum {
     NRF24_REG_RF_CH       = 0x05,
     NRF24_REG_RF_SETUP    = 0x06,
     NRF24_REG_STATUS      = 0x07,
-    NRF24_REG_OBSERVE_TX  = 0x08,
-    NRF24_REG_RPD         = 0x09,
 
-    NRF24_REG_TX_ADDR     = 0x10
-} Nrf24RegAddr_t;
+    NRF24_REG_TX_ADDR     = 0x10,
 
+    NRF24_REG_RX_PW_P0    = 0x11,
+    NRF24_REG_RX_PW_P1    = 0x12,
+    NRF24_REG_RX_PW_P2    = 0x13,
+    NRF24_REG_RX_PW_P3    = 0x14,
+    NRF24_REG_RX_PW_P4    = 0x15,
+    NRF24_REG_RX_PW_P5    = 0x16,
+
+    NRF24_REG_FIFO_STATUS = 0x17,
+
+    NRF24_REG_DYNPD       = 0x1C,
+    NRF24_REG_FEATURE     = 0x1D,
+} Nrf24RegsAddr_t;
+
+// === CONFIGURATION ===
 // === 0x00 CONFIG  ===
 
-#define NRF24_CONFIG_PRIM         0x00
-#define NRF24_CONFIG_PWR_UP      (1 << 1)
-#define NRF24_CONFIG_CRCO        (1 << 2)
-#define NRF24_CONFIG_EN_CRC      (1 << 3)
-#define NRF24_CONFIG_MASK_MAX_RT (1 << 4)
-#define NRF24_CONFIG_MASK_TX_DS  (1 << 5)
-#define NRF24_CONFIG_MASK_RX_DR  (1 << 6)
+typedef enum {
+    NRF24_PRIM_TRX = 1,
+} Nrf24ConfigBits_t;
 
-#define NRF24_CONFIG_POWER_UP  (NRF24_CONFIG_PRIM | NRF24_CONFIG_PWR_UP |\
-                                NRF24_CONFIG_CRCO | NRF24_CONFIG_EN_CRC)                             
+#define NRF24_CONFIG_PRIM_TRX    (0U << 0) // 0 TX,  1 RX
+#define NRF24_CONFIG_PWR_UP      (1U << 1) // 0 Off, 1 On
+#define NRF24_CONFIG_CRCO        (1U << 2) // 0 1B,  1 2B
+#define NRF24_CONFIG_EN_CRC      (1U << 3) // 0 Off, 1 On
+#define NRF24_CONFIG_MASK_MAX_RT (1U << 4) // 0 On,  1 Off - mask for exceeding send attempts
+#define NRF24_CONFIG_MASK_TX_DS  (1U << 5) // 0 On,  1 Off - mask successful submission
+#define NRF24_CONFIG_MASK_RX_DR  (1U << 6) // 0 On,  1 Off - mask data reception on IRQ
+
+#define NRF24_CONFIG_POWER_UP  (NRF24_CONFIG_PRIM_TRX    | NRF24_CONFIG_PWR_UP |\
+                                NRF24_CONFIG_CRCO        | NRF24_CONFIG_EN_CRC |\
+                                NRF24_CONFIG_MASK_MAX_RT |\
+                                NRF24_CONFIG_MASK_TX_DS  |\
+                                NRF24_CONFIG_MASK_RX_DR )                             
 #define NRF24_CONFIG_POWER_DOWN 0x00
 
-// === 0x03 ADDRESS WIDTH ===
+// === 0x01 EN_AA ===
 
-#define NRF24_AW_3BYTES    0x01
-#define NRF24_AW_4BYTES    0x02
-#define NRF24_AW_5BYTES    0x03
+#define NRF24_ENAA_P0 (0U << 0) //0 Off, 1 On
+#define NRF24_ENAA_P1 (0U << 1) //0 Off, 1 On
+#define NRF24_ENAA_P2 (0U << 2) //0 Off, 1 On
+#define NRF24_ENAA_P3 (0U << 3) //0 Off, 1 On
+#define NRF24_ENAA_P4 (0U << 4) //0 Off, 1 On
+#define NRF24_ENAA_P5 (0U << 5) //0 Off, 1 On
 
-// === 0x06 TX POWER ===
+#define NRF24_ENAA (NRF24_ENAA_P0 | NRF24_ENAA_P1 | NRF24_ENAA_P2 |\
+                    NRF24_ENAA_P3 | NRF24_ENAA_P4 | NRF24_ENAA_P5)
 
-#define NRF24_PWR_MINUS_18DBM (0x00 << 1)
-#define NRF24_PWR_MINUS_12DBM (0x01 << 1)
-#define NRF24_PWR_MINUS_6DBM  (0x02 << 1)
-#define NRF24_PWR_0DBM        (0x03 << 1)
+// == 0x02 EN_RXADDR ===
 
-// === 0x06 TX SPEED === 
+#define NRF24_ERX_P0 (0U << 0) //0 Off, 1 On
+#define NRF24_ERX_P1 (0U << 1) //0 Off, 1 On
+#define NRF24_ERX_P2 (0U << 2) //0 Off, 1 On
+#define NRF24_ERX_P3 (0U << 3) //0 Off, 1 On
+#define NRF24_ERX_P4 (0U << 4) //0 Off, 1 On
+#define NRF24_ERX_P5 (0U << 5) //0 Off, 1 On
 
-#define NRF24_DR_1MBPS         0x00
-#define NRF24_DR_2MBPS        (1 << 3)
-#define NRF24_DR_250KBPS      (1 << 5)
+#define NRF24_ERX (NRF24_ERX_P0 | NRF24_ERX_P1 | NRF24_ERX_P2\
+                   NRF24_ERX_P3 | NRF24_ERX_P4 | NRF24_ERX_P5)
+
+// === 0x03 SETUP_AW === 
+
+#define NRF24_AW_3BYTES 0x01U
+#define NRF24_AW_4BYTES 0x02U
+#define NRF24_AW_5BYTES 0x03U
+
+// === 0x04 SETUP_RETR ===
+
+#define NRF24_RETR_ARC 0x00U //0-3b auto retransmit count
+#define NRF24_RETR_ARD 0x00U //4-7b auto retransmit delay
+
+#define NRF24_RETR (NRF24_RETR_ARC | NRF24_RETR_ARD)
+
+// === 0x05 RF_CH ===
+
+#define NRF24_RF_CH 100U //0-125 (2400 + n = frequency)
+
+// === 0x06 RF_SETUP ===
+typedef enum {
+    NRF24_PWR_MINUS_18DBM = (0x00U << 1),
+    NRF24_PWR_MINUS_12DBM = (0x01U << 1),
+    NRF24_PWR_MINUS_6DBM  = (0x02U << 1),
+    NRF24_PWR_0DBM        = (0x03U << 1),
+} Nrf24RfPwr_t;
+
+typedef enum {
+    NRF24_DR_1MBPS   = (0U << 3),
+    NRF24_DR_2MBPS   = (1U << 3),
+    NRF24_DR_250KBPS = (1U << 5),
+} Nrf24RfDr_t;
+
+#define NRF24_RF_PWR NRF24_PWR_0DBM
+#define NRF24_RF_DR NRF24_DR_1MBPS
+#define NRF24_PLL_LOCK (0U << 4)
 
 // === 0x07 STATUS  ===
 
@@ -104,7 +162,7 @@ static uint8_t NRF24_SPI_WriteByte(SPI_TypeDef *SPIx, uint8_t data) {
 }
 
 static uint8_t NRF24_AccessReg(SPI_TypeDef *SPIx, uint8_t cmd_type, 
-                               Nrf24RegAddr_t reg_addr, uint8_t data) {
+                               Nrf24RegsAddr_t reg_addr, uint8_t data) {
     uint8_t val;
     LL_GPIO_ResetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
     

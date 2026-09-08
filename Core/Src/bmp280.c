@@ -4,9 +4,9 @@
 
 #define BMP280_MEASURE_DELAY_MS 20
 
-#define BMP280_OSRS_T_2X    (0x02 << 5) // 010_00000
-#define BMP280_OSRS_P_4X    (0x03 << 2) // 000_11000
-#define BMP280_MODE_FORCED  (0x01 << 0) // 000_00001
+#define BMP280_OSRS_T_2X    (0x02 << 5) // 0100 0000
+#define BMP280_OSRS_P_4X    (0x03 << 2) // 0001 1000
+#define BMP280_MODE_FORCED  (0x01 << 0) // 0000 0001
 #define BMP280_CONFIG (BMP280_OSRS_T_2X | BMP280_OSRS_P_4X | BMP280_MODE_FORCED)
 
 typedef struct {
