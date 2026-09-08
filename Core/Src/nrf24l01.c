@@ -18,6 +18,13 @@ typedef enum {
     NRF24_REG_RF_SETUP    = 0x06,
     NRF24_REG_STATUS      = 0x07,
 
+    NRF24_REG_RX_ADDR_P0  = 0x0A,
+    NRF24_REG_RX_ADDR_P1  = 0x0B,
+    NRF24_REG_RX_ADDR_P2  = 0x0C,
+    NRF24_REG_RX_ADDR_P3  = 0x0D,
+    NRF24_REG_RX_ADDR_P4  = 0x0E,
+    NRF24_REG_RX_ADDR_P5  = 0x0F,
+
     NRF24_REG_TX_ADDR     = 0x10,
 
     NRF24_REG_RX_PW_P0    = 0x11,
@@ -33,12 +40,21 @@ typedef enum {
     NRF24_REG_FEATURE     = 0x1D,
 } Nrf24RegsAddr_t;
 
-// === CONFIGURATION ===
-// === 0x00 CONFIG  ===
+typedef enum {
+    NRF24_PWR_MINUS_18DBM = 0x00U,
+    NRF24_PWR_MINUS_12DBM = 0x01U,
+    NRF24_PWR_MINUS_6DBM  = 0x02U,
+    NRF24_PWR_0DBM        = 0x03U,
+} Nrf24RfPwr_t;
 
 typedef enum {
-    NRF24_PRIM_TRX = 1,
-} Nrf24ConfigBits_t;
+    NRF24_DR_1MBPS   = 0x00U,
+    NRF24_DR_2MBPS   = 0x01U,
+    NRF24_DR_250KBPS = 0x04U,
+} Nrf24RfDr_t;
+
+// === CONFIGURATION ===
+// === 0x00 CONFIG  ===
 
 #define NRF24_CONFIG_PRIM_TRX    (0U << 0) // 0 TX,  1 RX
 #define NRF24_CONFIG_PWR_UP      (1U << 1) // 0 Off, 1 On
@@ -76,7 +92,7 @@ typedef enum {
 #define NRF24_ERX_P4 (0U << 4) //0 Off, 1 On
 #define NRF24_ERX_P5 (0U << 5) //0 Off, 1 On
 
-#define NRF24_ERX (NRF24_ERX_P0 | NRF24_ERX_P1 | NRF24_ERX_P2\
+#define NRF24_ERX (NRF24_ERX_P0 | NRF24_ERX_P1 | NRF24_ERX_P2 |\
                    NRF24_ERX_P3 | NRF24_ERX_P4 | NRF24_ERX_P5)
 
 // === 0x03 SETUP_AW === 
@@ -97,23 +113,14 @@ typedef enum {
 #define NRF24_RF_CH 100U //0-125 (2400 + n = frequency)
 
 // === 0x06 RF_SETUP ===
-typedef enum {
-    NRF24_PWR_MINUS_18DBM = 0x00U,
-    NRF24_PWR_MINUS_12DBM = 0x01U,
-    NRF24_PWR_MINUS_6DBM  = 0x02U,
-    NRF24_PWR_0DBM        = 0x03U,
-} Nrf24RfPwr_t;
-
-typedef enum {
-    NRF24_DR_1MBPS   = 0x00,
-    NRF24_DR_2MBPS   = 0x01,
-    NRF24_DR_250KBPS = 0x04,
-} Nrf24RfDr_t;
 
 #define NRF24_RF_PWR    (NRF24_PWR_0DBM << 1) //1-2b
 #define NRF24_RF_DR     (NRF24_DR_1MBPS << 3) //3,5b
 #define NRF24_PLL_LOCK  (0U << 4) //0 Off, 1 On
 #define NRF24_CONT_WAVE (0U << 7) //0 Off, 1 On
+
+#define NRF24_RF (NRF24_RF_PWR   | NRF24_RF_DR |\
+                  NRF24_PLL_LOCK | NRF24_CONT_WAVE)
 
 // === 0x07 STATUS  ===
 
@@ -128,22 +135,73 @@ typedef enum {
                                  NRF24_STATUS_TX_DS_MASK  |\
                                  NRF24_STATUS_RX_DR_MASK)
 
+// === 0x0A-0x0F RX_ADDR ===
+
+#define NRF24_RX_ADDR_P0 0xE7E7E7E7E7U
+#define NRF24_RX_ADDR_P1 0xC2C2C2C2C2U
+#define NRF24_RX_ADDR_P2 0xC3U //2-4B from NRF24_RX_ADDR_P1
+#define NRF24_RX_ADDR_P3 0xC4U //2-4B from NRF24_RX_ADDR_P1
+#define NRF24_RX_ADDR_P4 0xC5U //2-4B from NRF24_RX_ADDR_P1
+#define NRF24_RX_ADDR_P5 0xC6U //2-4B from NRF24_RX_ADDR_P1
+
+// === 0x10 TX_ADDR ===
+
+#define NRF24_TX_ADDR 0x9C96F11F5E
+
+// === 0x11-0x16 RX_PW ===
+
+#define NRF24_RX_PW_P0 0U //0 Off, 1-32B
+#define NRF24_RX_PW_P1 0U //0 Off, 1-32B
+#define NRF24_RX_PW_P2 0U //0 Off, 1-32B
+#define NRF24_RX_PW_P3 0U //0 Off, 1-32B
+#define NRF24_RX_PW_P4 0U //0 Off, 1-32B
+#define NRF24_RX_PW_P5 0U //0 Off, 1-32B
+
+// === 0x17 FIFO_STATUS ===
+
+#define NRF24_FIFO_RX_EMPTY_MASK_READ (1U << 0)
+#define NRF24_FIFO_RX_FULL_MASK_READ  (1U << 1)
+#define NRF24_FIFO_TX_EMPTY_MASK_READ (1U << 4)
+#define NRF24_FIFO_TX_FULL_MASK_READ  (1U << 5) 
+#define NRF24_FIFO_TX_REUSE_MASK_READ (1U << 6) 
+
+// === 0x1C DYNPD ===
+// required EN_DPL in 0x1D FEATURE
+#define NRF24_DPL_P0 (0U << 0) //0 Off, 1 On
+#define NRF24_DPL_P1 (0U << 1) //0 Off, 1 On
+#define NRF24_DPL_P2 (0U << 2) //0 Off, 1 On
+#define NRF24_DPL_P3 (0U << 3) //0 Off, 1 On
+#define NRF24_DPL_P4 (0U << 4) //0 Off, 1 On
+#define NRF24_DPL_P5 (0U << 5) //0 Off, 1 On
+
+// === 0x1D FEATURE ===
+
+#define NRF24_FEAT_EN_DYN_ACK (1U << 0) //0 Off, 1 On
+#define NRF24_FEAT_EN_ACK_PAY (0U << 1) //0 Off, 1 On
+#define NRF24_FEAT_EN_DPL     (0U << 2) //0 Off, 1 On 
+
 // === COMMANDS ===
 
-#define NRF24_CMD_R_REGISTER    0x00
-#define NRF24_CMD_W_REGISTER    0x20
-#define NRF24_CMD_W_TX_PAYLOAD  0xA0
-#define NRF24_CMD_R_RX_PAYLOAD  0x61
-#define NRF24_CMD_FLUSH_TX      0xE1
-#define NRF24_CMD_FLUSH_RX      0xE2
+#define NRF24_CMD_R_REGISTER    0x00U
+#define NRF24_CMD_W_REGISTER    0x20U
+#define NRF24_CMD_R_RX_PAYLOAD  0x61U
+#define NRF24_CMD_W_TX_PAYLOAD  0xA0U
+#define NRF24_CMD_FLUSH_TX      0xE1U
+#define NRF24_CMD_FLUSH_RX      0xE2U
+#define NRF24_CMD_REUSE_TX_PL   0xE3U
+
+#define NRF24_CMD_R_RX_PL_WID   0x60U
+#define NRF24_CMD_W_ACK_PAYLOAD 0xA8U // Require EN_ACK_PAY in 0x1D FEATURE
+#define NRF24_CMD_W_TX_PAYLOAD_NOACK 0xB0U // Require EN_DYN_ACK in 0x1D FEATURE
+#define NRF24_CMD_NOP           0xFFU
 
 // === MACRO ===
 
-#define NRF24_DELAY_US(us) do {                                                     \
-    uint32_t count = ((us) * (SystemCoreClock / 1000000UL)) / 4; \
-    while(count--) {                                                                \
-        __NOP();                                                                    \
-    }                                                                               \
+#define NRF24_DELAY_US(us) do {                                 \
+    uint32_t count = ((us) * (SystemCoreClock / 1000000UL)) / 4;\
+    while(count--) {                                            \
+        __NOP();                                                \
+    }                                                           \
 } while(0)
 
 static uint8_t NRF24_SPI_WriteByte(SPI_TypeDef *SPIx, uint8_t data) {
