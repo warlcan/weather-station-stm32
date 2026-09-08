@@ -98,21 +98,22 @@ typedef enum {
 
 // === 0x06 RF_SETUP ===
 typedef enum {
-    NRF24_PWR_MINUS_18DBM = (0x00U << 1),
-    NRF24_PWR_MINUS_12DBM = (0x01U << 1),
-    NRF24_PWR_MINUS_6DBM  = (0x02U << 1),
-    NRF24_PWR_0DBM        = (0x03U << 1),
+    NRF24_PWR_MINUS_18DBM = 0x00U,
+    NRF24_PWR_MINUS_12DBM = 0x01U,
+    NRF24_PWR_MINUS_6DBM  = 0x02U,
+    NRF24_PWR_0DBM        = 0x03U,
 } Nrf24RfPwr_t;
 
 typedef enum {
-    NRF24_DR_1MBPS   = (0U << 3),
-    NRF24_DR_2MBPS   = (1U << 3),
-    NRF24_DR_250KBPS = (1U << 5),
+    NRF24_DR_1MBPS   = 0x00,
+    NRF24_DR_2MBPS   = 0x01,
+    NRF24_DR_250KBPS = 0x04,
 } Nrf24RfDr_t;
 
-#define NRF24_RF_PWR NRF24_PWR_0DBM
-#define NRF24_RF_DR NRF24_DR_1MBPS
-#define NRF24_PLL_LOCK (0U << 4)
+#define NRF24_RF_PWR    (NRF24_PWR_0DBM << 1) //1-2b
+#define NRF24_RF_DR     (NRF24_DR_1MBPS << 3) //3,5b
+#define NRF24_PLL_LOCK  (0U << 4) //0 Off, 1 On
+#define NRF24_CONT_WAVE (0U << 7) //0 Off, 1 On
 
 // === 0x07 STATUS  ===
 
