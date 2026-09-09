@@ -1,12 +1,12 @@
 #include "nrf24l01.h"
 
-#define NRF24_WAKEUP_DELAY_MS   2
-#define NRF24_CE_DELAY_US       20
-#define SPI_TIMEOUT_MS          5
+#define NRF24_WAKEUP_DELAY_MS 2
+#define NRF24_CE_DELAY_US     20
+#define SPI_TIMEOUT_MS        5
+
+#define DUMMY_BYTE            0xFF
 
 extern uint32_t SystemCoreClock;
-
-#define DUMMY_BYTE                 0xFF
 
 typedef enum {
     NRF24_REG_CONFIG      = 0x00,
@@ -53,6 +53,13 @@ typedef enum {
     NRF24_DR_250KBPS = 0x04U,
 } Nrf24RfDr_t;
 
+typedef enum {
+    NRF24_AW_3BYTES = 0x01U,
+    NRF24_AW_4BYTES = 0x02U,
+    NRF24_AW_5BYTES = 0x03U,
+} Nrf24AwBytes_t;
+
+
 // === CONFIGURATION ===
 // === 0x00 CONFIG  ===
 
@@ -97,9 +104,7 @@ typedef enum {
 
 // === 0x03 SETUP_AW === 
 
-#define NRF24_AW_3BYTES 0x01U
-#define NRF24_AW_4BYTES 0x02U
-#define NRF24_AW_5BYTES 0x03U
+#define NRF24_AW NRF24_AW_5BYTES
 
 // === 0x04 SETUP_RETR ===
 
@@ -114,8 +119,8 @@ typedef enum {
 
 // === 0x06 RF_SETUP ===
 
-#define NRF24_RF_PWR    (NRF24_PWR_0DBM << 1) //1-2b
-#define NRF24_RF_DR     (NRF24_DR_1MBPS << 3) //3,5b
+#define NRF24_RF_PWR    (NRF24_PWR_0DBM << 1)
+#define NRF24_RF_DR     (NRF24_DR_1MBPS << 3)
 #define NRF24_PLL_LOCK  (0U << 4) //0 Off, 1 On
 #define NRF24_CONT_WAVE (0U << 7) //0 Off, 1 On
 
@@ -136,9 +141,10 @@ typedef enum {
                                  NRF24_STATUS_RX_DR_MASK)
 
 // === 0x0A-0x0F RX_ADDR ===
+#define NRF24_ADDR_WIDTH (NRF24_AW + 2U)
 
-#define NRF24_RX_ADDR_P0 0xE7E7E7E7E7U
-#define NRF24_RX_ADDR_P1 0xC2C2C2C2C2U
+static const uint8_t NRF24_RX_ADDR_P0[NRF24_ADDR_WIDTH] = {0xE7, 0xE7, 0xE7, 0xE7, 0xE7};
+static const uint8_t NRF24_RX_ADDR_P1[NRF24_ADDR_WIDTH] = {0xC2, 0xC2, 0xC2, 0xC2, 0xC2};
 #define NRF24_RX_ADDR_P2 0xC3U //2-4B from NRF24_RX_ADDR_P1
 #define NRF24_RX_ADDR_P3 0xC4U //2-4B from NRF24_RX_ADDR_P1
 #define NRF24_RX_ADDR_P4 0xC5U //2-4B from NRF24_RX_ADDR_P1
@@ -146,7 +152,7 @@ typedef enum {
 
 // === 0x10 TX_ADDR ===
 
-#define NRF24_TX_ADDR 0x9C96F11F5E
+static const uint8_t NRF24_TX_ADDR[NRF24_ADDR_WIDTH] = {0x9c, 0x96, 0xf1, 0x1f, 0x5e};
 
 // === 0x11-0x16 RX_PW ===
 
@@ -204,7 +210,7 @@ typedef enum {
     }                                                           \
 } while(0)
 
-static uint8_t NRF24_SPI_WriteByte(SPI_TypeDef *SPIx, uint8_t data) {
+static uint8_t NRF24_SPI_TransmitByte(SPI_TypeDef *SPIx, uint8_t data) {
     if (LL_SPI_IsActiveFlag_OVR(SPIx)) {
         LL_SPI_ReceiveData8(SPIx);
     }
@@ -225,8 +231,8 @@ static uint8_t NRF24_AccessReg(SPI_TypeDef *SPIx, uint8_t cmd_type,
     uint8_t val;
     LL_GPIO_ResetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
     
-    NRF24_SPI_WriteByte(SPIx, cmd_type | (reg_addr & 0x1F));
-    val = NRF24_SPI_WriteByte(SPIx, data);
+    NRF24_SPI_TransmitByte(SPIx, cmd_type | (reg_addr & 0x1F));
+    val = NRF24_SPI_TransmitByte(SPIx, data);
     
     if (!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), SPI_TIMEOUT_MS)) {
         BSP_ErrorSet(ERR_NRF_BSY);
@@ -235,11 +241,11 @@ static uint8_t NRF24_AccessReg(SPI_TypeDef *SPIx, uint8_t cmd_type,
     return val; 
 }
 
-static void NRF24_WriteByteBuf(SPI_TypeDef *SPIx, uint8_t cmd, uint8_t *buf, uint8_t buf_size) {
+static void NRF24_WriteByteBuf(SPI_TypeDef *SPIx, uint8_t cmd, const uint8_t *buf, uint8_t buf_size) {
     LL_GPIO_ResetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
-    NRF24_SPI_WriteByte(SPIx, cmd);
+    NRF24_SPI_TransmitByte(SPIx, cmd);
     for(uint8_t i = 0; i < buf_size; i++) {
-        NRF24_SPI_WriteByte(SPIx, buf[i]);
+        NRF24_SPI_TransmitByte(SPIx, buf[i]);
     }
     if(!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), SPI_TIMEOUT_MS)) {
         BSP_ErrorSet(ERR_NRF_BSY);
@@ -248,12 +254,19 @@ static void NRF24_WriteByteBuf(SPI_TypeDef *SPIx, uint8_t cmd, uint8_t *buf, uin
 }
 
 void NRF24_Init(SPI_TypeDef *SPIx){
-    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_AA, 0x00);
-    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_RETR, 0x00);
-    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_AW, NRF24_AW_5BYTES);
-    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_CH, 100);
+    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_AA, 0x00);
+    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_RETR, 0x00);
+    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_AW, NRF24_AW_5BYTES);
+    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_CH, 100);
 
-    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_SETUP, NRF24_DR_1MBPS | NRF24_PWR_0DBM);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_AA, NRF24_ENAA);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_RXADDR, NRF24_ERX);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_AW, NRF24_AW);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_RETR, NRF24_RETR);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_CH, NRF24_RF_CH);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_SETUP, NRF24_RF);
+
+    NRF24_WriteByteBuf(SPIx, NRF24_CMD_W_REGISTER | NRF24_REG_RX_ADDR_P0, NRF24_RX_ADDR_P0, sizeof(NRF24_RX_ADDR_P0));
 
     uint8_t addr[5] = {0x9c, 0x96, 0xf1, 0x1f, 0x5e}; //receiver address
     NRF24_WriteByteBuf(SPIx, NRF24_CMD_W_REGISTER | NRF24_REG_TX_ADDR, addr, sizeof(addr));
