@@ -2,9 +2,10 @@
 
 #define NRF24_WAKEUP_DELAY_MS 2
 #define NRF24_CE_DELAY_US     20
-#define SPI_TIMEOUT_MS        5
+#define NRF24_SPI_TIMEOUT_MS  5
 
-#define DUMMY_BYTE            0xFF
+#define NRF24_DUMMY_DATA_BYTE 0xFF
+#define NRF24_REG_ADDR_MASK   0x1F
 
 extern uint32_t SystemCoreClock;
 
@@ -152,7 +153,7 @@ static const uint8_t NRF24_RX_ADDR_P1[NRF24_ADDR_WIDTH] = {0xC2, 0xC2, 0xC2, 0xC
 
 // === 0x10 TX_ADDR ===
 
-static const uint8_t NRF24_TX_ADDR[NRF24_ADDR_WIDTH] = {0x9c, 0x96, 0xf1, 0x1f, 0x5e};
+static const uint8_t NRF24_TX_ADDR[NRF24_ADDR_WIDTH] = {0x9C, 0x96, 0xF1, 0x1F, 0x5E};
 
 // === 0x11-0x16 RX_PW ===
 
@@ -180,11 +181,16 @@ static const uint8_t NRF24_TX_ADDR[NRF24_ADDR_WIDTH] = {0x9c, 0x96, 0xf1, 0x1f, 
 #define NRF24_DPL_P4 (0U << 4) //0 Off, 1 On
 #define NRF24_DPL_P5 (0U << 5) //0 Off, 1 On
 
+#define NRF24_DYNPD (NRF24_DPL_P0 | NRF24_DPL_P1 | NRF24_DPL_P2 |\
+                     NRF24_DPL_P3 | NRF24_DPL_P4 | NRF24_DPL_P5 )
+
 // === 0x1D FEATURE ===
 
 #define NRF24_FEAT_EN_DYN_ACK (1U << 0) //0 Off, 1 On
 #define NRF24_FEAT_EN_ACK_PAY (0U << 1) //0 Off, 1 On
 #define NRF24_FEAT_EN_DPL     (0U << 2) //0 Off, 1 On 
+
+#define NRF24_FEAT (NRF24_FEAT_EN_DYN_ACK | NRF24_FEAT_EN_ACK_PAY | NRF24_FEAT_EN_DPL)
 
 // === COMMANDS ===
 
@@ -211,19 +217,28 @@ static const uint8_t NRF24_TX_ADDR[NRF24_ADDR_WIDTH] = {0x9c, 0x96, 0xf1, 0x1f, 
 } while(0)
 
 static uint8_t NRF24_SPI_TransmitByte(SPI_TypeDef *SPIx, uint8_t data) {
-    if (LL_SPI_IsActiveFlag_OVR(SPIx)) {
-        LL_SPI_ReceiveData8(SPIx);
-    }
+    if (LL_SPI_IsActiveFlag_OVR(SPIx)) LL_SPI_ReceiveData8(SPIx);
     
-    if(!WAIT_FLAG(LL_SPI_IsActiveFlag_TXE(SPIx), SPI_TIMEOUT_MS)) {
+    if(!WAIT_FLAG(LL_SPI_IsActiveFlag_TXE(SPIx), NRF24_SPI_TIMEOUT_MS)) {
         BSP_ErrorSet(ERR_NRF_TXRX);
     }
     LL_SPI_TransmitData8(SPIx, data);
     
-    if(!WAIT_FLAG(LL_SPI_IsActiveFlag_RXNE(SPIx), SPI_TIMEOUT_MS)) {
+    if(!WAIT_FLAG(LL_SPI_IsActiveFlag_RXNE(SPIx), NRF24_SPI_TIMEOUT_MS)) {
         BSP_ErrorSet(ERR_NRF_TXRX);
     }
     return LL_SPI_ReceiveData8(SPIx);
+}
+
+static void NRF24_TransmitCmd(SPI_TypeDef *SPIx, uint8_t cmd) {
+    LL_GPIO_ResetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
+
+    NRF24_SPI_TransmitByte(SPIx, cmd);
+
+    if (!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), NRF24_SPI_TIMEOUT_MS)) {
+        BSP_ErrorSet(ERR_NRF_BSY);
+    }
+    LL_GPIO_SetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
 }
 
 static uint8_t NRF24_AccessReg(SPI_TypeDef *SPIx, uint8_t cmd_type, 
@@ -231,34 +246,32 @@ static uint8_t NRF24_AccessReg(SPI_TypeDef *SPIx, uint8_t cmd_type,
     uint8_t val;
     LL_GPIO_ResetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
     
-    NRF24_SPI_TransmitByte(SPIx, cmd_type | (reg_addr & 0x1F));
+    NRF24_SPI_TransmitByte(SPIx, cmd_type | (reg_addr & NRF24_REG_ADDR_MASK));
     val = NRF24_SPI_TransmitByte(SPIx, data);
     
-    if (!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), SPI_TIMEOUT_MS)) {
+    if (!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), NRF24_SPI_TIMEOUT_MS)) {
         BSP_ErrorSet(ERR_NRF_BSY);
     }
     LL_GPIO_SetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
     return val; 
 }
 
-static void NRF24_WriteByteBuf(SPI_TypeDef *SPIx, uint8_t cmd, const uint8_t *buf, uint8_t buf_size) {
+static void NRF24_TransmitBuffer(SPI_TypeDef *SPIx, uint8_t cmd,
+                                 Nrf24RegsAddr_t reg_addr, const uint8_t *buf, 
+                                 uint8_t buf_size){
     LL_GPIO_ResetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
-    NRF24_SPI_TransmitByte(SPIx, cmd);
+    NRF24_SPI_TransmitByte(SPIx, cmd | (reg_addr & NRF24_REG_ADDR_MASK));
     for(uint8_t i = 0; i < buf_size; i++) {
         NRF24_SPI_TransmitByte(SPIx, buf[i]);
     }
-    if(!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), SPI_TIMEOUT_MS)) {
+
+    if(!WAIT_FLAG(!LL_SPI_IsActiveFlag_BSY(SPIx), NRF24_SPI_TIMEOUT_MS)) {
         BSP_ErrorSet(ERR_NRF_BSY);
     }
     LL_GPIO_SetOutputPin(NRF24_CSN_PORT, NRF24_CSN_PIN);
 }
 
 void NRF24_Init(SPI_TypeDef *SPIx){
-    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_AA, 0x00);
-    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_RETR, 0x00);
-    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_AW, NRF24_AW_5BYTES);
-    // NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_CH, 100);
-
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_AA, NRF24_ENAA);
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_EN_RXADDR, NRF24_ERX);
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_SETUP_AW, NRF24_AW);
@@ -266,14 +279,29 @@ void NRF24_Init(SPI_TypeDef *SPIx){
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_CH, NRF24_RF_CH);
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RF_SETUP, NRF24_RF);
 
-    NRF24_WriteByteBuf(SPIx, NRF24_CMD_W_REGISTER | NRF24_REG_RX_ADDR_P0, NRF24_RX_ADDR_P0, sizeof(NRF24_RX_ADDR_P0));
-
-    uint8_t addr[5] = {0x9c, 0x96, 0xf1, 0x1f, 0x5e}; //receiver address
-    NRF24_WriteByteBuf(SPIx, NRF24_CMD_W_REGISTER | NRF24_REG_TX_ADDR, addr, sizeof(addr));
+    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_ADDR_P0, NRF24_RX_ADDR_P0, sizeof(NRF24_RX_ADDR_P0));
+    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_ADDR_P1, NRF24_RX_ADDR_P1, sizeof(NRF24_RX_ADDR_P1));
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_ADDR_P2, NRF24_RX_ADDR_P2);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_ADDR_P3, NRF24_RX_ADDR_P3);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_ADDR_P4, NRF24_RX_ADDR_P4);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_ADDR_P5, NRF24_RX_ADDR_P5);
     
+    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_TX_ADDR, NRF24_TX_ADDR, sizeof(NRF24_TX_ADDR));
+
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_PW_P0, NRF24_RX_PW_P0);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_PW_P1, NRF24_RX_PW_P1);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_PW_P2, NRF24_RX_PW_P2);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_PW_P3, NRF24_RX_PW_P3);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_PW_P4, NRF24_RX_PW_P4);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_RX_PW_P5, NRF24_RX_PW_P5);
+
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_DYNPD, NRF24_DYNPD);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_FEATURE, NRF24_FEAT);
+
+
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_ALL);
 
-    uint8_t check_aw = NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_SETUP_AW, DUMMY_BYTE);
+    uint8_t check_aw = NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_SETUP_AW, NRF24_DUMMY_DATA_BYTE);
     if (check_aw != NRF24_AW_5BYTES) BSP_ErrorSet(ERR_NRF_ERROR);
 }
 
@@ -281,13 +309,14 @@ bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_CONFIG, NRF24_CONFIG_POWER_UP);
     BSP_LowPowerDelay(NRF24_WAKEUP_DELAY_MS);
 
-    NRF24_WriteByteBuf(SPIx, NRF24_CMD_W_TX_PAYLOAD, (uint8_t*)nrf24_data, nrf24_data_size);
+    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_TX_PAYLOAD_NOACK, 0, (uint8_t*)nrf24_data, nrf24_data_size);
     LL_GPIO_SetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
     NRF24_DELAY_US(NRF24_CE_DELAY_US);
     LL_GPIO_ResetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
 
-    if(!WAIT_FLAG(NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_STATUS, DUMMY_BYTE) & NRF24_STATUS_TX_DS_MASK, SPI_TIMEOUT_MS)) {
+    if(!WAIT_FLAG(NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_STATUS, NRF24_DUMMY_DATA_BYTE) & NRF24_STATUS_TX_DS_MASK, NRF24_SPI_TIMEOUT_MS)) {
             NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_ALL);
+            NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_TX);
             BSP_ErrorSet(ERR_NRF_ERROR);
             return false;
     }
