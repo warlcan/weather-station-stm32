@@ -60,15 +60,6 @@ typedef enum {
 #define NRF24_CMD_W_TX_PAYLOAD_NOACK 0xB0U // Require EN_DYN_ACK in 0x1D FEATURE
 #define NRF24_CMD_NOP           0xFFU
 
-// === MACRO ===
-
-#define NRF24_DELAY_US(us) do {                                          \
-    volatile uint32_t count = ((us) * (SystemCoreClock / 1000000UL)) / 4;\
-    while(count--) {                                                     \
-        __NOP();                                                         \
-    }                                                                    \
-} while(0)
-
 static uint8_t NRF24_SPI_TransmitByte(SPI_TypeDef *SPIx, uint8_t data) {
     if (LL_SPI_IsActiveFlag_OVR(SPIx)) LL_SPI_ReceiveData8(SPIx);
     
@@ -172,7 +163,7 @@ bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf
                         (uint8_t*)nrf24_data, nrf24_data_size);
 
     LL_GPIO_SetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
-    NRF24_DELAY_US(NRF24_CE_DELAY_US);
+    BSP_DelayUS(NRF24_CE_DELAY_US);
     LL_GPIO_ResetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
 
     if(!WAIT_FLAG(NRF24_TransmitCmd(SPIx, NRF24_CMD_NOP) & NRF24_STATUS_TX_DS_MASK, NRF24_SPI_TIMEOUT_MS)) {
