@@ -48,6 +48,7 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_ll_lptim.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_ll_spi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_ll_pwr.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_ll_tim.c
 )
 
 # Drivers Midllewares

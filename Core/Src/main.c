@@ -67,10 +67,11 @@ volatile uint32_t system_ticks = 0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void MX_I2C1_Init(void);
-void MX_SPI1_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
 static void MX_IWDG_Init(void);
 static void MX_LPTIM1_Init(void);
+static void MX_TIM22_Init(void);
 /* USER CODE BEGIN PFP */
 #ifdef debug
 void DEBUG_RTT_WriteInt(uint8_t buffer_index, int num);
@@ -125,6 +126,7 @@ int main(void)
   MX_SPI1_Init();
   MX_IWDG_Init();
   MX_LPTIM1_Init();
+  MX_TIM22_Init();
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
   LL_PWR_EnableFastWakeUp();
@@ -250,7 +252,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-void MX_I2C1_Init(void)
+static void MX_I2C1_Init(void)
 {
 
   /* USER CODE BEGIN I2C1_Init 0 */
@@ -379,7 +381,7 @@ static void MX_LPTIM1_Init(void)
   * @param None
   * @retval None
   */
-void MX_SPI1_Init(void)
+static void MX_SPI1_Init(void)
 {
 
   /* USER CODE BEGIN SPI1_Init 0 */
@@ -442,6 +444,41 @@ void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
   LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_6, LL_GPIO_PULL_DOWN);
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief TIM22 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM22_Init(void)
+{
+
+  /* USER CODE BEGIN TIM22_Init 0 */
+
+  /* USER CODE END TIM22_Init 0 */
+
+  LL_TIM_InitTypeDef TIM_InitStruct = {0};
+
+  /* Peripheral clock enable */
+  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM22);
+
+  /* USER CODE BEGIN TIM22_Init 1 */
+
+  /* USER CODE END TIM22_Init 1 */
+  TIM_InitStruct.Prescaler = 1;
+  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+  TIM_InitStruct.Autoreload = 65535;
+  TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+  LL_TIM_Init(TIM22, &TIM_InitStruct);
+  LL_TIM_DisableARRPreload(TIM22);
+  LL_TIM_SetClockSource(TIM22, LL_TIM_CLOCKSOURCE_INTERNAL);
+  LL_TIM_SetTriggerOutput(TIM22, LL_TIM_TRGO_RESET);
+  LL_TIM_DisableMasterSlaveMode(TIM22);
+  /* USER CODE BEGIN TIM22_Init 2 */
+
+  /* USER CODE END TIM22_Init 2 */
 
 }
 
