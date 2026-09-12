@@ -20,8 +20,8 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (delay_ms == 0) return;
 
     uint32_t ticks = (delay_ms * LPTIM_TICKS_PER_SEC) / 1000;
-    if (ticks == 0) ticks = 1;
-    if (ticks > 25000) ticks = 25000; // if ticks > 21s(min) the iwdg will trigger
+    if(ticks == 0) ticks = 1;
+    if(ticks > 25000) ticks = 25000; // if ticks > 21s(min) the iwdg will trigger
 
     LL_LPTIM_SetAutoReload(LPTIM1, ticks);
     WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIM1), 5); 
@@ -35,7 +35,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     LL_LPM_EnableDeepSleep();
 
     __disable_irq(); 
-    if (!LL_LPTIM_IsActiveFlag_ARRM(LPTIM1)) {
+    if(!LL_LPTIM_IsActiveFlag_ARRM(LPTIM1)) {
         __WFI();
     }
     __enable_irq();
@@ -44,6 +44,18 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     LL_SYSTICK_EnableIT();
 }
 
+void BSP_DelayUS(uint16_t delay_us) {
+    if(delay_us == 0) return;
+
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM22);
+    LL_TIM_SetCounter(TIM22, 0);
+    LL_TIM_EnableCounter(TIM22);
+
+    while(LL_TIM_GetCounter(TIM22) < delay_us);
+    
+    LL_TIM_DisableCounter(TIM22);
+    LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_TIM22);    
+}
 
 uint32_t BSP_GetUID(void) {
     uint32_t *uid = (uint32_t *)UID_BASE;

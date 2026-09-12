@@ -30,6 +30,8 @@ typedef enum {
 } BSP_ErrMask_t;
 
 void BSP_LowPowerDelay(uint32_t Delay);
+void BSP_DelayUS(uint16_t delay_us);
+
 uint32_t BSP_GetUID();
 uint32_t BSP_GetRandNum(uint32_t *seed);
 
