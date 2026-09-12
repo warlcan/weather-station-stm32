@@ -158,6 +158,8 @@ void NRF24_Init(SPI_TypeDef *SPIx){
 bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf24_data_size) {
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_CONFIG, NRF24_CONFIG_FULL);
     BSP_LowPowerDelay(NRF24_WAKEUP_DELAY_MS);
+    
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
 
     NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_TX_PAYLOAD_NOACK, NRF24_REG_NONE, 
                         (uint8_t*)nrf24_data, nrf24_data_size);
