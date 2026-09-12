@@ -1,12 +1,14 @@
 #include "nrf24l01.h"
 
-#define NRF24_WAKEUP_DELAY_MS 2
-#define NRF24_CE_DELAY_US     20
-#define NRF24_SPI_TIMEOUT_MS  5
+#define NRF24_WAKEUP_DELAY_MS   2
+#define NRF24_CE_DELAY_US       20
+#define NRF24_SPI_TIMEOUT_MS    5
 
-#define NRF24_DUMMY_DATA_BYTE 0xFF
-#define NRF24_REG_ADDR_MASK   0x1F
-#define NRF24_NO_REG          0x00U
+#define NRF24_SPI_DUMMY_BYTE    0xFFU
+#define NRF24_REG_NONE          0x00U
+#define NRF24_CMD_NOP           0xFFU
+
+#define NRF24_REG_ADDR_MASK     0x1FU
 
 extern uint32_t SystemCoreClock;
 
@@ -138,9 +140,9 @@ typedef enum {
 #define NRF24_STATUS_RX_DR_MASK    (1U << 6) 
 #define NRF24_STATUS_RX_EMPTY_MASK (1U << 7)
 
-#define NRF24_STATUS_CLEAR_ALL  (NRF24_STATUS_MAX_RT_MASK |\
-                                 NRF24_STATUS_TX_DS_MASK  |\
-                                 NRF24_STATUS_RX_DR_MASK)
+#define NRF24_STATUS_CLEAR_FLAGS (NRF24_STATUS_MAX_RT_MASK |\
+                                  NRF24_STATUS_TX_DS_MASK  |\
+                                  NRF24_STATUS_RX_DR_MASK)
 
 // === 0x0A-0x0F RX_ADDR ===
 #define NRF24_ADDR_WIDTH (NRF24_AW + 2U)
@@ -274,6 +276,12 @@ static void NRF24_TransmitBuffer(SPI_TypeDef *SPIx, uint8_t cmd,
 }
 
 void NRF24_Init(SPI_TypeDef *SPIx){
+    uint8_t status = NRF24_TransmitCmd(SPIx, NRF24_CMD_NOP);
+    if (status == 0x00 || status == 0xFF) {
+        BSP_ErrorSet(ERR_NRF_ERROR);
+        return;
+    }
+    
     NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_RX);
     NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_TX);
 
@@ -304,23 +312,20 @@ void NRF24_Init(SPI_TypeDef *SPIx){
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_FEATURE, NRF24_FEAT);
 
 
-    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_ALL);
-
-    uint8_t check_aw = NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_SETUP_AW, NRF24_DUMMY_DATA_BYTE);
-    if (check_aw != NRF24_AW_5BYTES) BSP_ErrorSet(ERR_NRF_ERROR);
+    NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
 }
 
 bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf24_data_size) {
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_CONFIG, NRF24_CONFIG_FULL);
     BSP_LowPowerDelay(NRF24_WAKEUP_DELAY_MS);
 
-    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_TX_PAYLOAD_NOACK, NRF24_NO_REG, (uint8_t*)nrf24_data, nrf24_data_size);
+    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_TX_PAYLOAD_NOACK, NRF24_REG_NONE, (uint8_t*)nrf24_data, nrf24_data_size);
     LL_GPIO_SetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
     NRF24_DELAY_US(NRF24_CE_DELAY_US);
     LL_GPIO_ResetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
 
-    if(!WAIT_FLAG(NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_STATUS, NRF24_DUMMY_DATA_BYTE) & NRF24_STATUS_TX_DS_MASK, NRF24_SPI_TIMEOUT_MS)) {
-            NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_ALL);
+    if(!WAIT_FLAG(NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_STATUS, NRF24_SPI_DUMMY_BYTE) & NRF24_STATUS_TX_DS_MASK, NRF24_SPI_TIMEOUT_MS)) {
+            NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
             NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_TX);
             BSP_ErrorSet(ERR_NRF_ERROR);
             return false;
