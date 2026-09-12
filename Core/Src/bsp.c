@@ -40,8 +40,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     }
     __enable_irq();
 
-    LL_LPM_EnableSleep();  
-    system_ticks += delay_ms;
+    LL_LPM_EnableSleep();
     LL_SYSTICK_EnableIT();
 }
 
