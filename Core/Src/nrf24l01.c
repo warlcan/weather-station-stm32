@@ -63,6 +63,15 @@ typedef enum {
     NRF24_AW_5BYTES = 0x03U,
 } Nrf24AwBytes_t;
 
+typedef enum {
+    NRF24_STATUS_TX_FULL_MASK  = (1U << 0), 
+    NRF24_STATUS_RX_P_NO_MASK  = (0x07U << 1),
+    NRF24_STATUS_MAX_RT_MASK   = (1U << 4), 
+    NRF24_STATUS_TX_DS_MASK    = (1U << 5), 
+    NRF24_STATUS_RX_DR_MASK    = (1U << 6), 
+    NRF24_STATUS_RX_EMPTY_MASK = (1U << 7),
+} Nrf24Status_t;
+
 
 // === CONFIGURATION ===
 // === 0x00 CONFIG  ===
@@ -132,13 +141,6 @@ typedef enum {
                   NRF24_PLL_LOCK | NRF24_CONT_WAVE)
 
 // === 0x07 STATUS  ===
-
-#define NRF24_STATUS_TX_FULL_MASK  (1U << 0) 
-#define NRF24_STATUS_RX_P_NO_MASK  (0x07U << 1)
-#define NRF24_STATUS_MAX_RT_MASK   (1U << 4) 
-#define NRF24_STATUS_TX_DS_MASK    (1U << 5) 
-#define NRF24_STATUS_RX_DR_MASK    (1U << 6) 
-#define NRF24_STATUS_RX_EMPTY_MASK (1U << 7)
 
 #define NRF24_STATUS_CLEAR_FLAGS (NRF24_STATUS_MAX_RT_MASK |\
                                   NRF24_STATUS_TX_DS_MASK  |\
@@ -278,7 +280,7 @@ static void NRF24_TransmitBuffer(SPI_TypeDef *SPIx, uint8_t cmd,
 void NRF24_Init(SPI_TypeDef *SPIx){
     uint8_t status = NRF24_TransmitCmd(SPIx, NRF24_CMD_NOP);
     if (status == 0x00 || status == 0xFF) {
-        BSP_ErrorSet(ERR_NRF_ERROR);
+        BSP_ErrorSet(ERR_NRF_NOT_FOUND);
         return;
     }
     
@@ -311,7 +313,6 @@ void NRF24_Init(SPI_TypeDef *SPIx){
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_DYNPD, NRF24_DYNPD);
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_FEATURE, NRF24_FEAT);
 
-
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
 }
 
@@ -319,16 +320,18 @@ bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_CONFIG, NRF24_CONFIG_FULL);
     BSP_LowPowerDelay(NRF24_WAKEUP_DELAY_MS);
 
-    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_TX_PAYLOAD_NOACK, NRF24_REG_NONE, (uint8_t*)nrf24_data, nrf24_data_size);
+    NRF24_TransmitBuffer(SPIx, NRF24_CMD_W_TX_PAYLOAD_NOACK, NRF24_REG_NONE, 
+                        (uint8_t*)nrf24_data, nrf24_data_size);
+
     LL_GPIO_SetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
     NRF24_DELAY_US(NRF24_CE_DELAY_US);
     LL_GPIO_ResetOutputPin(NRF24_CE_PORT, NRF24_CE_PIN);
 
-    if(!WAIT_FLAG(NRF24_AccessReg(SPIx, NRF24_CMD_R_REGISTER, NRF24_REG_STATUS, NRF24_SPI_DUMMY_BYTE) & NRF24_STATUS_TX_DS_MASK, NRF24_SPI_TIMEOUT_MS)) {
-            NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
-            NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_TX);
-            BSP_ErrorSet(ERR_NRF_ERROR);
-            return false;
+    if(!WAIT_FLAG(NRF24_TransmitCmd(SPIx, NRF24_CMD_NOP) & NRF24_STATUS_TX_DS_MASK, NRF24_SPI_TIMEOUT_MS)) {
+        NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
+        NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_TX);
+        BSP_ErrorSet(ERR_NRF_NOT_FOUND);
+        return false;
     }
 
     NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_TX_DS_MASK);

@@ -24,7 +24,7 @@ typedef enum {
     ERR_I2C_BUSY      = 1 << 1,
     ERR_I2C_TXRX      = 1 << 2,
     ERR_I2C_STOP      = 1 << 3,
-    ERR_NRF_ERROR     = 1 << 4,
+    ERR_NRF_NOT_FOUND = 1 << 4,
     ERR_NRF_BSY       = 1 << 5,
     ERR_NRF_TXRX      = 1 << 6,
 } BSP_ErrMask_t;
