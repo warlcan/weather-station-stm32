@@ -76,7 +76,6 @@ static void MX_TIM22_Init(void);
 #ifdef debug
 void DEBUG_RTT_WriteInt(uint8_t buffer_index, int num);
 #endif
-void BSP_LowPowerDelay(uint32_t Delay);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -477,7 +476,7 @@ static void MX_TIM22_Init(void)
   LL_TIM_SetTriggerOutput(TIM22, LL_TIM_TRGO_RESET);
   LL_TIM_DisableMasterSlaveMode(TIM22);
   /* USER CODE BEGIN TIM22_Init 2 */
-
+  LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_TIM22);
   /* USER CODE END TIM22_Init 2 */
 
 }
