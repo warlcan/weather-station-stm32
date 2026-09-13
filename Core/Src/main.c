@@ -130,7 +130,6 @@ int main(void)
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
-  LL_PWR_EnableFastWakeUp();
 
   rand_num = BSP_GetUID();
 
