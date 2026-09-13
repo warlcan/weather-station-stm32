@@ -35,6 +35,8 @@ void BSP_DelayUS(uint16_t delay_us);
 uint32_t BSP_GetUID();
 uint32_t BSP_GetRandNum(uint32_t *seed);
 
+uint32_t BSP_GetVoltageLevel();
+
 void BSP_ErrorSet(BSP_ErrMask_t error_mask);
 void BSP_ErrorReset(BSP_ErrMask_t error_mask);
 uint8_t BSP_GetErrors(void);

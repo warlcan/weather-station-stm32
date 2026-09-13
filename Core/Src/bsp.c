@@ -2,6 +2,8 @@
 
 #include "stm32l0xx_ll_exti.h"
 
+#define BSP_ADC_FLAG_TIMEOUT 5
+
 #define LSI_FREQ_HZ          37000U
 #define LPTIM_PRESCALER      32U
 #define LPTIM_TICKS_PER_SEC  (LSI_FREQ_HZ / LPTIM_PRESCALER)
@@ -72,6 +74,33 @@ uint32_t BSP_GetRandNum(uint32_t *seed){
 
     *seed = x;
     return x;
+}
+
+uint32_t BSP_GetVoltageLevel(){
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC1);
+    LL_ADC_SetCommonPathInternalCh(__LL_ADC_COMMON_INSTANCE(ADC1), LL_ADC_PATH_INTERNAL_VREFINT);
+    BSP_DelayUS(30);
+
+    if (!LL_ADC_IsCalibrationOnGoing(ADC1)) {
+        LL_ADC_StartCalibration(ADC1);
+        WAIT_FLAG(!LL_ADC_IsCalibrationOnGoing(ADC1), BSP_ADC_FLAG_TIMEOUT);
+    }
+
+    LL_ADC_Enable(ADC1);
+    WAIT_FLAG(LL_ADC_IsActiveFlag_ADRDY(ADC1), BSP_ADC_FLAG_TIMEOUT);
+
+    LL_ADC_REG_StartConversion(ADC1);
+    WAIT_FLAG(LL_ADC_IsActiveFlag_EOC(ADC1), BSP_ADC_FLAG_TIMEOUT);
+
+    uint16_t vrefint_raw = LL_ADC_REG_ReadConversionData12(ADC1);
+    uint32_t vdd_mv = __LL_ADC_CALC_VREFANALOG_VOLTAGE(vrefint_raw, LL_ADC_RESOLUTION_12B);
+    LL_ADC_ClearFlag_EOC(ADC1);
+    
+    LL_ADC_Disable(ADC1);
+    WAIT_FLAG(!LL_ADC_IsEnabled(ADC1), BSP_ADC_FLAG_TIMEOUT);
+    LL_ADC_SetCommonPathInternalCh(__LL_ADC_COMMON_INSTANCE(ADC1), LL_ADC_PATH_INTERNAL_NONE);
+    LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC1);
+    return vdd_mv;
 }
 
 // === SENSORS ===
