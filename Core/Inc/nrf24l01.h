@@ -20,6 +20,7 @@ typedef struct __attribute__((packed)) {
     float humidity;
     float pressure;
     uint8_t errors;
+    uint32_t voltage_level;
 } NRF24_Data_t;
 
 void NRF24_Init(SPI_TypeDef *SPIx);

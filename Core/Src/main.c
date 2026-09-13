@@ -140,7 +140,6 @@ int main(void)
   DEBUG_RTT_WriteString(0, "RCC-CSR: 0x");
   DEBUG_RTT_WriteInt(0, RCC->CSR);
   DEBUG_RTT_PutChar(0, '\n');
-  LL_mDelay(1000);
   RCC->CSR |= RCC_CSR_RMVF;
   #endif
 
@@ -178,8 +177,9 @@ int main(void)
     nrf24_data.humidity    = aht20_data.humidity;
     nrf24_data.pressure    = bmp280_data.pressure;
     nrf24_data.errors      = BSP_GetErrors();
-
+    nrf24_data.voltage_level = BSP_GetVoltageLevel();
     NRF24_TransmitData(SPI1, &nrf24_data, sizeof(nrf24_data));
+
     BSP_PeriphModeSleep();
     #ifdef debug
     while (SEGGER_RTT_HasDataUp(0) != 0);
@@ -310,6 +310,8 @@ static void MX_ADC_Init(void)
     wait_loop_index--;
   }
   /* USER CODE BEGIN ADC_Init 2 */
+  LL_ADC_Disable(ADC1);
+  LL_ADC_SetCommonPathInternalCh(__LL_ADC_COMMON_INSTANCE(ADC1), LL_ADC_PATH_INTERNAL_NONE);
   LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC1);
   /* USER CODE END ADC_Init 2 */
 
