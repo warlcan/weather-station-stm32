@@ -160,6 +160,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    nrf24_data.voltage_level = BSP_GetVoltageLevel();
+
     BSP_PeriphModeActive();
 
     if(!AHT20_GetData(I2C1, &aht20_data)) {
@@ -177,7 +179,6 @@ int main(void)
     nrf24_data.humidity    = aht20_data.humidity;
     nrf24_data.pressure    = bmp280_data.pressure;
     nrf24_data.errors      = BSP_GetErrors();
-    nrf24_data.voltage_level = BSP_GetVoltageLevel();
     NRF24_TransmitData(SPI1, &nrf24_data, sizeof(nrf24_data));
 
     BSP_PeriphModeSleep();
@@ -310,8 +311,8 @@ static void MX_ADC_Init(void)
     wait_loop_index--;
   }
   /* USER CODE BEGIN ADC_Init 2 */
-  LL_ADC_Disable(ADC1);
   LL_ADC_SetCommonPathInternalCh(__LL_ADC_COMMON_INSTANCE(ADC1), LL_ADC_PATH_INTERNAL_NONE);
+  LL_ADC_DisableInternalRegulator(ADC1);
   LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC1);
   /* USER CODE END ADC_Init 2 */
 
