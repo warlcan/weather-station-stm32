@@ -142,10 +142,6 @@ int main(void)
   RCC->CSR |= RCC_CSR_RMVF;
   #endif
 
-  LL_LPTIM_Enable(LPTIM1);
-  LL_LPTIM_EnableIT_ARRM(LPTIM1);
-  LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_29);
-
   BSP_PeriphModeActive();
   NRF24_Init(SPI1);   DEBUG_RTT_WriteString(0, "NRF Init.\r\n");
   BMP280_GetCoef(I2C1);  DEBUG_RTT_WriteString(0, "BMP Init.\r\n");
@@ -458,7 +454,9 @@ static void MX_RTC_Init(void)
   */
   LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_DIV_16);
   /* USER CODE BEGIN RTC_Init 2 */
-
+  LL_RTC_EnableIT_WUT(RTC);
+  LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_20);
+  LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_20);
   /* USER CODE END RTC_Init 2 */
 
 }
