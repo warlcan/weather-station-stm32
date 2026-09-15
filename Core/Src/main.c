@@ -70,9 +70,9 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_IWDG_Init(void);
-static void MX_LPTIM1_Init(void);
 static void MX_TIM22_Init(void);
 static void MX_ADC_Init(void);
+static void MX_RTC_Init(void);
 /* USER CODE BEGIN PFP */
 #ifdef debug
 void DEBUG_RTT_WriteInt(uint8_t buffer_index, int num);
@@ -125,9 +125,9 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_IWDG_Init();
-  MX_LPTIM1_Init();
   MX_TIM22_Init();
   MX_ADC_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
 
@@ -230,6 +230,14 @@ void SystemClock_Config(void)
   }
   LL_RCC_MSI_SetRange(LL_RCC_MSIRANGE_5);
   LL_RCC_MSI_SetCalibTrimming(0);
+  LL_PWR_EnableBkUpAccess();
+  if(LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSI)
+  {
+    LL_RCC_ForceBackupDomainReset();
+    LL_RCC_ReleaseBackupDomainReset();
+    LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
+  }
+  LL_RCC_EnableRTC();
   LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
   LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
   LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
@@ -245,7 +253,6 @@ void SystemClock_Config(void)
 
   LL_SetSystemCoreClock(2097000);
   LL_RCC_SetI2CClockSource(LL_RCC_I2C1_CLKSOURCE_SYSCLK);
-  LL_RCC_SetLPTIMClockSource(LL_RCC_LPTIM1_CLKSOURCE_LSI);
 }
 
 /**
@@ -413,36 +420,46 @@ static void MX_IWDG_Init(void)
 }
 
 /**
-  * @brief LPTIM1 Initialization Function
+  * @brief RTC Initialization Function
   * @param None
   * @retval None
   */
-static void MX_LPTIM1_Init(void)
+static void MX_RTC_Init(void)
 {
 
-  /* USER CODE BEGIN LPTIM1_Init 0 */
+  /* USER CODE BEGIN RTC_Init 0 */
 
-  /* USER CODE END LPTIM1_Init 0 */
+  /* USER CODE END RTC_Init 0 */
+
+  LL_RTC_InitTypeDef RTC_InitStruct = {0};
 
   /* Peripheral clock enable */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_LPTIM1);
+  LL_RCC_EnableRTC();
 
-  /* LPTIM1 interrupt Init */
-  NVIC_SetPriority(LPTIM1_IRQn, 0);
-  NVIC_EnableIRQ(LPTIM1_IRQn);
+  /* RTC interrupt Init */
+  NVIC_SetPriority(RTC_IRQn, 0);
+  NVIC_EnableIRQ(RTC_IRQn);
 
-  /* USER CODE BEGIN LPTIM1_Init 1 */
+  /* USER CODE BEGIN RTC_Init 1 */
 
-  /* USER CODE END LPTIM1_Init 1 */
-  LL_LPTIM_SetClockSource(LPTIM1, LL_LPTIM_CLK_SOURCE_INTERNAL);
-  LL_LPTIM_SetPrescaler(LPTIM1, LL_LPTIM_PRESCALER_DIV32);
-  LL_LPTIM_SetPolarity(LPTIM1, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
-  LL_LPTIM_SetUpdateMode(LPTIM1, LL_LPTIM_UPDATE_MODE_ENDOFPERIOD);
-  LL_LPTIM_SetCounterMode(LPTIM1, LL_LPTIM_COUNTER_MODE_INTERNAL);
-  LL_LPTIM_TrigSw(LPTIM1);
-  /* USER CODE BEGIN LPTIM1_Init 2 */
+  /* USER CODE END RTC_Init 1 */
 
-  /* USER CODE END LPTIM1_Init 2 */
+  /** Initialize RTC and set the Time and Date
+  */
+  RTC_InitStruct.HourFormat = LL_RTC_HOURFORMAT_24HOUR;
+  RTC_InitStruct.AsynchPrescaler = 127;
+  RTC_InitStruct.SynchPrescaler = 255;
+  LL_RTC_Init(RTC, &RTC_InitStruct);
+
+  /** Initialize RTC and set the Time and Date
+  */
+
+  /** Enable the WakeUp
+  */
+  LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_DIV_16);
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
 
 }
 
