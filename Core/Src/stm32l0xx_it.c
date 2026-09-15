@@ -147,7 +147,9 @@ void SysTick_Handler(void)
 void RTC_IRQHandler(void)
 {
   /* USER CODE BEGIN RTC_IRQn 0 */
-
+  if (LL_RTC_IsActiveFlag_WUT(RTC)) {
+    LL_RTC_ClearFlag_WUT(RTC);
+  }
   /* USER CODE END RTC_IRQn 0 */
   /* USER CODE BEGIN RTC_IRQn 1 */
 
