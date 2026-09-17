@@ -5,9 +5,9 @@
 #define BSP_ADC_FLAG_TIMEOUT 5
 
 #define LSI_FREQ_HZ          37000U
-#define LPTIM_PRESCALER      32U
-#define LPTIM_TICKS_PER_SEC  (LSI_FREQ_HZ / LPTIM_PRESCALER)
+#define RTC_WUT_DIV          16U
 
+#define RTC_WUT_TICKS_PER_SEC  (LSI_FREQ_HZ / RTC_WUT_DIV)
 // === ERROR HANDLERS ===
 
 static volatile uint8_t system_errors = ERR_NO_ERROR;
@@ -20,30 +20,38 @@ uint8_t BSP_GetErrors(void) {return system_errors;}
 
 void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (delay_ms == 0) return;
+    LL_RTC_ClearFlag_WUT(RTC);
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
 
-    uint32_t ticks = (delay_ms * LPTIM_TICKS_PER_SEC) / 1000;
-    if(ticks == 0) ticks = 1;
-    if(ticks > 25000) ticks = 25000; // if ticks > 21s(min) the iwdg will trigger
+    uint32_t ticks = ((uint64_t)delay_ms * RTC_WUT_TICKS_PER_SEC + 999U) / 1000U;
+    if (ticks == 0) ticks = 1;
+    if (ticks > 0xFFFFU) ticks = 0xFFFFU;
 
-    LL_LPTIM_SetAutoReload(LPTIM1, ticks);
-    WAIT_FLAG(LL_LPTIM_IsActiveFlag_ARROK(LPTIM1), 5); 
-    LL_LPTIM_ClearFlag_ARROK(LPTIM1);
-    LL_LPTIM_ClearFlag_ARRM(LPTIM1);
+    LL_RTC_ClearFlag_WUT(RTC);
+
+    LL_RTC_DisableWriteProtection(RTC);
+    LL_RTC_WAKEUP_SetAutoReload(RTC, ticks - 1);
+    LL_RTC_WAKEUP_Enable(RTC);
+    LL_RTC_EnableWriteProtection(RTC);
 
     LL_SYSTICK_DisableIT();
-    LL_LPTIM_StartCounter(LPTIM1, LL_LPTIM_OPERATING_MODE_ONESHOT);
 
     LL_PWR_SetPowerMode(LL_PWR_MODE_STOP);
     LL_LPM_EnableDeepSleep();
 
-    __disable_irq(); 
-    if(!LL_LPTIM_IsActiveFlag_ARRM(LPTIM1)) {
+    __disable_irq();
         __WFI();
-    }
-    __enable_irq();
+    __enable_irq(); 
 
     LL_LPM_EnableSleep();
+
+    LL_RTC_DisableWriteProtection(RTC);
+    LL_RTC_WAKEUP_Disable(RTC);
+    LL_RTC_EnableWriteProtection(RTC);
+
+    system_ticks += delay_ms;
     LL_SYSTICK_EnableIT();
+
 }
 
 void BSP_DelayUS(uint16_t delay_us) {
