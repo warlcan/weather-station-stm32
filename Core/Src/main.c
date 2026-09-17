@@ -160,12 +160,12 @@ int main(void)
     BSP_PeriphModeActive();
 
     if(!AHT20_GetData(I2C1, &aht20_data)) {
-      BSP_ErrorSet(ERR_SENSORS_ERROR)
+      BSP_ErrorSet(ERR_SENSORS_ERROR);
       DEBUG_RTT_WriteString(0, "AHT20 Error\n");
     }
 
     if(!BMP280_GetData(I2C1, &bmp280_data)) {
-      BSP_ErrorSet(ERR_SENSORS_ERROR)
+      BSP_ErrorSet(ERR_SENSORS_ERROR);
       DEBUG_RTT_WriteString(0, "BMP280 Error\n");
     }
 
@@ -454,7 +454,11 @@ static void MX_RTC_Init(void)
   */
   LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_DIV_16);
   /* USER CODE BEGIN RTC_Init 2 */
+  LL_RTC_DisableWriteProtection(RTC);
+  LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_DIV_16);
   LL_RTC_EnableIT_WUT(RTC);
+  LL_RTC_EnableWriteProtection(RTC);
+
   LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_20);
   LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_20);
   /* USER CODE END RTC_Init 2 */
