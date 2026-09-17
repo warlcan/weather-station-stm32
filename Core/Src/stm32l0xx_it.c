@@ -150,6 +150,7 @@ void RTC_IRQHandler(void)
   if (LL_RTC_IsActiveFlag_WUT(RTC)) {
     LL_RTC_ClearFlag_WUT(RTC);
   }
+  LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
   /* USER CODE END RTC_IRQn 0 */
   /* USER CODE BEGIN RTC_IRQn 1 */
 
