@@ -27,8 +27,6 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (ticks == 0) ticks = 1;
     if (ticks > 0xFFFFU) ticks = 0xFFFFU;
 
-    LL_RTC_ClearFlag_WUT(RTC);
-
     LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_WAKEUP_SetAutoReload(RTC, ticks - 1);
     LL_RTC_WAKEUP_Enable(RTC);
