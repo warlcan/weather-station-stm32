@@ -455,7 +455,6 @@ static void MX_RTC_Init(void)
   LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_DIV_16);
   /* USER CODE BEGIN RTC_Init 2 */
   LL_RTC_DisableWriteProtection(RTC);
-  LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_DIV_16);
   LL_RTC_EnableIT_WUT(RTC);
   LL_RTC_EnableWriteProtection(RTC);
 
