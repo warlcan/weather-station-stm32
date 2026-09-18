@@ -6,7 +6,6 @@
 
 #define LSI_FREQ_HZ          37000U
 #define RTC_WUT_DIV          16U
-
 #define RTC_WUT_TICKS_PER_SEC  (LSI_FREQ_HZ / RTC_WUT_DIV)
 // === ERROR HANDLERS ===
 
@@ -27,27 +26,25 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     if (ticks == 0) ticks = 1;
     if (ticks > 0xFFFFU) ticks = 0xFFFFU;
 
+    LL_SYSTICK_DisableIT();
+
     LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_WAKEUP_SetAutoReload(RTC, ticks - 1);
     LL_RTC_WAKEUP_Enable(RTC);
     LL_RTC_EnableWriteProtection(RTC);
 
-    LL_SYSTICK_DisableIT();
-
     LL_PWR_SetPowerMode(LL_PWR_MODE_STOP);
-    LL_LPM_EnableDeepSleep();
 
+    LL_LPM_EnableDeepSleep();
     __disable_irq();
         __WFI();
     __enable_irq(); 
-
     LL_LPM_EnableSleep();
 
     LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_WAKEUP_Disable(RTC);
     LL_RTC_EnableWriteProtection(RTC);
-
-    system_ticks += delay_ms;
+    
     LL_SYSTICK_EnableIT();
 
 }
