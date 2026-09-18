@@ -7,6 +7,9 @@
 #define LSI_FREQ_HZ          37000U
 #define RTC_WUT_DIV          16U
 #define RTC_WUT_TICKS_PER_SEC  (LSI_FREQ_HZ / RTC_WUT_DIV)
+
+#define DIV_ROUND_UP(n, d) (((n) + (d) - 1U) / (d))
+
 // === ERROR HANDLERS ===
 
 static volatile uint8_t system_errors = ERR_NO_ERROR;
@@ -22,7 +25,7 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     LL_RTC_ClearFlag_WUT(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
 
-    uint32_t ticks = ((uint64_t)delay_ms * RTC_WUT_TICKS_PER_SEC + 999U) / 1000U;
+    uint32_t ticks = DIV_ROUND_UP((uint64_t)delay_ms * RTC_WUT_TICKS_PER_SEC, 1000U);
     if (ticks == 0) ticks = 1;
     if (ticks > 0xFFFFU) ticks = 0xFFFFU;
 
