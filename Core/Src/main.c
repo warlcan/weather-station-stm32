@@ -130,7 +130,8 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
-
+  LL_PWR_DisableBkUpAccess();
+  
   rand_num = BSP_GetUID();
 
   #ifdef debug
