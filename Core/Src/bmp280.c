@@ -2,7 +2,7 @@
 
 #define BMP280_I2C_ADDRESS      (0x77 << 1)
 
-#define BMP280_MEASURE_DELAY_MS 20
+#define BMP280_MEASURE_DELAY_MS 40
 
 #define BMP280_OSRS_T_2X    (0x02 << 5) // 0100 0000
 #define BMP280_OSRS_P_4X    (0x03 << 2) // 0001 1000
