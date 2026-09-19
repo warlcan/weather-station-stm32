@@ -39,8 +39,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 // #define debug
-#define SLEEP_ONE_PHASE_TIME_MS 20000
-#define SLEEP_PHASES_NUMBER     30
+#define SLEEP_ONE_PHASE_TIME_MS 15000
+#define SLEEP_PHASES_NUMBER     40
+
 #define SLEEP_JITTER_LIMIT      10000
 /* USER CODE END PD */
 
@@ -131,7 +132,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LL_PWR_EnableUltraLowPower();
   LL_PWR_DisableBkUpAccess();
-  
+
   rand_num = BSP_GetUID();
 
   #ifdef debug
