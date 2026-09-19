@@ -49,6 +49,9 @@ uint32_t bmp280_compensate_P_int64(int32_t adc_P) {
 }
 
 bool BMP280_GetCoef(I2C_TypeDef *I2Cx) {
+    LL_I2C_ClearFlag_NACK(I2Cx);
+    LL_I2C_ClearFlag_BERR(I2Cx);
+
     uint8_t calib[24];
     if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 0x88, calib, sizeof(calib))) return false;
 
@@ -71,6 +74,10 @@ bool BMP280_GetCoef(I2C_TypeDef *I2Cx) {
 
 bool BMP280_GetData(I2C_TypeDef *I2Cx, BMP280_Data_t *out_data) {
     if (!BMP280_is_init) return false; //foolproofing
+    
+    //Clear flags
+    LL_I2C_ClearFlag_NACK(I2Cx);
+    LL_I2C_ClearFlag_BERR(I2Cx);
 
     //Transmit configuration
     uint8_t bmp280_config_data[2] = {0xF4, BMP280_CONFIG};
