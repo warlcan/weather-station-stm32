@@ -1,13 +1,15 @@
 #include "bsp_periph.h"
 #include "bsp.h"
 
+#define BSP_SENSOR_POWER_UP_DELAY 100
+
 // === SENSORS ===
 
 static void BSP_SensorStart(void) {
     LL_GPIO_SetOutputPin(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin);
     LL_GPIO_SetPinMode(SENSOR_VDD_GPIO_Port, SENSOR_VDD_Pin, LL_GPIO_MODE_OUTPUT);
 
-    BSP_LowPowerDelay(100);
+    BSP_LowPowerDelay(BSP_SENSOR_POWER_UP_DELAY);
 
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_9, LL_GPIO_MODE_ALTERNATE);
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_10, LL_GPIO_MODE_ALTERNATE);
