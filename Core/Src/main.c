@@ -141,7 +141,7 @@ int main(void)
   DEBUG_RTT_WriteString(0, "RCC-CSR: 0x");
   DEBUG_RTT_WriteInt(0, RCC->CSR);
   DEBUG_RTT_PutChar(0, '\n');
-  RCC->CSR |= RCC_CSR_RMVF;
+  SET_BIT(RCC->CSR, RCC_CSR_RMVF);
   #endif
 
   BSP_PeriphModeActive();
