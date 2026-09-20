@@ -146,8 +146,8 @@ int main(void)
   #endif
 
   BSP_PeriphModeActive();
-  NRF24_Init(SPI1);   DEBUG_RTT_WriteString(0, "NRF Init.\r\n");
-  BMP280_GetCoef(I2C1);  DEBUG_RTT_WriteString(0, "BMP Init.\r\n");
+  NRF24_Init(SPI1);   DEBUG_RTT_WriteString(0, "NRF configured\r\n");
+  BMP280_GetCoef(I2C1);  DEBUG_RTT_WriteString(0, "BMP configured\r\n");
   BSP_PeriphModeSleep();
   /* USER CODE END 2 */
 
@@ -160,6 +160,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
     nrf24_data.voltage_level = BSP_GetVoltageLevel();
 
+    DEBUG_RTT_WriteString(0, "Periph wake up");
     BSP_PeriphModeActive();
 
     if(!AHT20_GetData(I2C1, &aht20_data)) {
@@ -180,8 +181,11 @@ int main(void)
     NRF24_TransmitData(SPI1, &nrf24_data, sizeof(nrf24_data));
 
     BSP_PeriphModeSleep();
+    DEBUG_RTT_WriteString(0, "Periph sleep");
+
     #ifdef debug
     while (SEGGER_RTT_HasDataUp(0) != 0);
+    LL_mDelay(5000);
     #endif
 
     wakeup_counter = 0;
