@@ -172,6 +172,7 @@ bool NRF24_TransmitData(SPI_TypeDef *SPIx, NRF24_Data_t *nrf24_data, uint8_t nrf
         NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_STATUS, NRF24_STATUS_CLEAR_FLAGS);
         NRF24_TransmitCmd(SPIx, NRF24_CMD_FLUSH_TX);
         BSP_ErrorSet(ERR_NRF_NOT_FOUND);
+        NRF24_AccessReg(SPIx, NRF24_CMD_W_REGISTER, NRF24_REG_CONFIG, NRF24_CONFIG_POWER_DOWN);
         return false;
     }
 
