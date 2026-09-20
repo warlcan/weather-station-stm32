@@ -49,7 +49,6 @@ void BSP_LowPowerDelay(uint32_t delay_ms) {
     LL_RTC_EnableWriteProtection(RTC);
     
     LL_SYSTICK_EnableIT();
-
 }
 
 void BSP_DelayUS(uint16_t delay_us) {

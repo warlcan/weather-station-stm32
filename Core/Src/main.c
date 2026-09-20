@@ -40,6 +40,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 // #define debug
+
 #define SLEEP_ONE_PHASE_TIME_MS 15000
 #define SLEEP_PHASES_NUMBER     40
 
@@ -201,6 +202,8 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
+#pragma region SYSTEM_INITS
 
 /**
   * @brief System Clock Configuration
@@ -638,6 +641,8 @@ static void MX_GPIO_Init(void)
   #endif
   /* USER CODE END MX_GPIO_Init_2 */
 }
+
+#pragma endregion
 
 /* USER CODE BEGIN 4 */
 #ifdef debug
