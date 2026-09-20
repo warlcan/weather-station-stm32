@@ -29,6 +29,7 @@
 #include "bmp280.h"
 #include "nrf24l01.h"
 #include "bsp.h"
+#include "bsp_periph.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

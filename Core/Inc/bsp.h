@@ -41,7 +41,4 @@ void BSP_ErrorSet(BSP_ErrMask_t error_mask);
 void BSP_ErrorReset(BSP_ErrMask_t error_mask);
 uint8_t BSP_GetErrors(void);
 
-void BSP_PeriphModeActive();
-void BSP_PeriphModeSleep();
-
 #endif
