@@ -4,6 +4,10 @@
 
 #define BMP280_MEASURE_DELAY_MS 40
 
+#define BMP280_REGS_BLOCK_CALIB 0x88
+#define BMP280_REG_MAIN_CONTROL_ADDR 0xF4
+#define BMP280_REGS_BLOCK_MEASHURES 0xF7
+
 #define BMP280_OSRS_T_2X    (0x02 << 5) // 0100 0000
 #define BMP280_OSRS_P_4X    (0x03 << 2) // 0001 1000
 #define BMP280_MODE_FORCED  (0x01 << 0) // 0000 0001
@@ -51,9 +55,10 @@ uint32_t bmp280_compensate_P_int64(int32_t adc_P) {
 bool BMP280_GetCoef(I2C_TypeDef *I2Cx) {
     LL_I2C_ClearFlag_NACK(I2Cx);
     LL_I2C_ClearFlag_BERR(I2Cx);
-
+    
     uint8_t calib[24];
-    if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 0x88, calib, sizeof(calib))) return false;
+    if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 
+        BMP280_REGS_BLOCK_CALIB, calib, sizeof(calib))) return false;
 
     cb.dig_T1 = (uint16_t)(calib[0]  | (calib[1] << 8));
     cb.dig_T2 = (int16_t) (calib[2]  | (calib[3] << 8));
@@ -74,20 +79,22 @@ bool BMP280_GetCoef(I2C_TypeDef *I2Cx) {
 
 bool BMP280_GetData(I2C_TypeDef *I2Cx, BMP280_Data_t *out_data) {
     if (!BMP280_is_init) return false; //foolproofing
-    
     //Clear flags
     LL_I2C_ClearFlag_NACK(I2Cx);
     LL_I2C_ClearFlag_BERR(I2Cx);
 
     //Transmit configuration
-    uint8_t bmp280_config_data[2] = {0xF4, BMP280_CONFIG};
-    if (!I2C_TransmitData(I2Cx, BMP280_I2C_ADDRESS, bmp280_config_data, sizeof(bmp280_config_data))){ return false; }
+    uint8_t bmp280_config_data[2] = {BMP280_REG_MAIN_CONTROL_ADDR, BMP280_CONFIG};
+    if (!I2C_TransmitData(I2Cx, BMP280_I2C_ADDRESS, 
+        bmp280_config_data, sizeof(bmp280_config_data))){ return false; }
     
+    //Delay
     BSP_LowPowerDelay(BMP280_MEASURE_DELAY_MS);
 
     //Receive measurement data
     uint8_t measure_buffer[6];
-    if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 0xF7, measure_buffer, sizeof(measure_buffer))){ return false; }
+    if (!I2C_ReceiveRegsData(I2Cx, BMP280_I2C_ADDRESS, 
+        BMP280_REGS_BLOCK_MEASHURES, measure_buffer, sizeof(measure_buffer))){ return false; }
 
     //Parsing
     int32_t adc_P = (int32_t)((((uint32_t)(measure_buffer[0])) << 12) | 
