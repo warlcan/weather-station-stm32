@@ -17,6 +17,7 @@ bool AHT20_GetData(I2C_TypeDef *I2Cx, AHT20_Data_t *out_data) {
     uint8_t measure_cmd_bytes[3] = {0xAC, 0x33, 0x00};
     if(!I2C_TransmitData(I2Cx, AHT20_I2C_ADDRESS, measure_cmd_bytes, 3)) return false;
 
+    //Delay
     BSP_LowPowerDelay(AHT20_MEASURE_DELAY_MS);
     
     //Receive
