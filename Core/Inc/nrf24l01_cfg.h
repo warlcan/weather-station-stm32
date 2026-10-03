@@ -90,8 +90,8 @@ typedef enum {
 
 // === 0x06 RF_SETUP ===
 
-#define NRF24_RF_PWR    (NRF24_PWR_0DBM << 1)
-#define NRF24_RF_DR     (NRF24_DR_1MBPS << 3)
+#define NRF24_RF_PWR    (NRF24_PWR_0DBM   << 1)
+#define NRF24_RF_DR     (NRF24_DR_250KBPS << 3)
 #define NRF24_PLL_LOCK  (0U << 4) //0 Off, 1 On
 #define NRF24_CONT_WAVE (0U << 7) //0 Off, 1 On
 
